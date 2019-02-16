@@ -28,12 +28,41 @@ LuaPrompt = Class {
             comment    = colors.bright .. colors.black,
             number     = colors.yellow,
             operator   = colors.yellow,
-            keywords   = colors.bright .. colors.yellow,
+            keywords   = colors.bright .. colors.magenta,
             identifier = colors.blue,
         }
     end
 
 }
+
+function LuaPrompt:registerKeybinding()
+    Prompt.registerKeybinding(self)
+
+    local promptBackspace = self.keybinding["\127"]
+    self.keybinding["\127"] = function()
+        promptBackspace()
+
+        self:renderHighlighted()
+
+        self.message = nil
+    end
+end
+
+function LuaPrompt:renderHighlighted()
+    self.highlightedBuffer = ""
+    local lastIndex
+    for kind, text, index in self.lexer:tokenize(self.buffer) do
+        self.highlightedBuffer = self.highlightedBuffer
+            .. (self.tokenColors[kind] or "")
+            .. text
+            .. colors.reset
+
+        lastIndex = index
+    end
+
+    self.highlightedBuffer = self.highlightedBuffer
+        .. self.buffer:sub(lastIndex)
+end
 
 function LuaPrompt:complete()
 end
@@ -50,19 +79,7 @@ end
 function LuaPrompt:processInput(input)
     Prompt.processInput(self, input)
 
-    self.highlightedBuffer = ""
-    local lastIndex
-    for kind, text, index in self.lexer:tokenize(self.buffer) do
-        self.highlightedBuffer = self.highlightedBuffer
-            .. (self.tokenColors[kind] or "")
-            .. text
-            .. colors.reset
-
-        lastIndex = index
-    end
-
-    self.highlightedBuffer = self.highlightedBuffer
-        .. self.buffer:sub(lastIndex)
+    self:renderHighlighted()
 end
 
 function LuaPrompt:render()
