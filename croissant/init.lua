@@ -8,14 +8,14 @@ local COPYRIGHT =
 
 local dump
 dump = function(t, inc, seen)
-        if type(t) == "table" then
+    if type(t) == "table" then
         local s = ""
         inc = inc or 1
         seen = seen or {}
 
         seen[t] = true
 
-        s = s .. "{\n"
+        s = s .. colors.yellow .. tostring(t) .. colors.reset .. ": {\n"
 
         for k, v in pairs(t) do
             s = s .. ("     "):rep(inc)
