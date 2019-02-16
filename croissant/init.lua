@@ -55,25 +55,27 @@ dump = function(t, inc, seen)
     return colors.yellow .. tostring(t) .. colors.reset
 end
 
-print(COPYRIGHT)
+return function()
+    print(COPYRIGHT)
 
-while true do
-    local code = LuaPrompt():ask()
+    while true do
+        local code = LuaPrompt():ask()
 
-    local fn, err = load("return " .. code, "croissant")
-    if not fn then
-        fn, err = load(code, "croissant")
-    end
-
-    if fn then
-        local result = table.pack(fn())
-        local dumps = {}
-        for _, r in ipairs(result) do
-            table.insert(dumps, dump(r))
+        local fn, err = load("return " .. code, "croissant")
+        if not fn then
+            fn, err = load(code, "croissant")
         end
 
-        print(table.concat(dumps))
-    else
-        print(colors.red .. err .. colors.reset)
+        if fn then
+            local result = table.pack(fn())
+            local dumps = {}
+            for _, r in ipairs(result) do
+                table.insert(dumps, dump(r))
+            end
+
+            print(table.concat(dumps))
+        else
+            print(colors.red .. err .. colors.reset)
+        end
     end
 end
