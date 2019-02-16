@@ -18,6 +18,10 @@ LuaPrompt = Class {
             required = false
         })
 
+        self.history = options.history or {}
+        self.historyIndex = #self.history + 1
+        self.historyPrefixIndex = ""
+
         self.lexer = Lexer()
         -- Buffer whithout colors
         self.highlightedBuffer = ""
@@ -38,6 +42,14 @@ LuaPrompt = Class {
 function LuaPrompt:registerKeybinding()
     Prompt.registerKeybinding(self)
 
+    self.keybinding[Prompt.escapeCodes.cursor_up]   = function()
+        self:selectHistory(-1)
+    end
+
+    self.keybinding[Prompt.escapeCodes.cursor_down] = function()
+        self:selectHistory(1)
+    end
+
     local promptBackspace = self.keybinding["\127"]
     self.keybinding["\127"] = function()
         promptBackspace()
@@ -46,6 +58,46 @@ function LuaPrompt:registerKeybinding()
 
         self.message = nil
     end
+
+    local clearline = self.keybinding["\11"]
+    self.keybinding["\11"] = function()
+        clearline()
+
+        self:renderHighlighted()
+
+        self.message = nil
+    end
+end
+
+function LuaPrompt:selectHistory(dt)
+    local filteredHistory = {}
+
+    if utf8.len(self.buffer) > 0 then
+        self.historyPrefixIndex = utf8.len(self.historyPrefixIndex) > 0
+            and self.historyPrefixIndex
+            or self.buffer
+
+        for _, entry in ipairs(self.history) do
+            if entry:sub(1, #self.historyPrefixIndex) == self.historyPrefixIndex then
+                table.insert(filteredHistory, entry)
+            end
+        end
+    else
+        filteredHistory = self.history
+    end
+
+    if utf8.len(self.historyPrefixIndex) > 0
+        and self.historyPrefixIndex ~= self.buffer:sub(1, #self.historyPrefixIndex) then
+        self.historyPrefixIndex = self.buffer
+        self.historyIndex = #filteredHistory
+    else
+        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #filteredHistory)
+    end
+
+    self.buffer = filteredHistory[self.historyIndex] or self.buffer
+    self.currentPosition.x = utf8.len(self.buffer)
+
+    self:renderHighlighted()
 end
 
 function LuaPrompt:renderHighlighted()
@@ -60,8 +112,10 @@ function LuaPrompt:renderHighlighted()
         lastIndex = index
     end
 
-    self.highlightedBuffer = self.highlightedBuffer
-        .. self.buffer:sub(lastIndex)
+    if lastIndex then
+        self.highlightedBuffer = self.highlightedBuffer
+            .. self.buffer:sub(lastIndex)
+    end
 end
 
 function LuaPrompt:complete()

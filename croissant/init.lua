@@ -58,8 +58,14 @@ end
 return function()
     print(COPYRIGHT)
 
+    local history = {}
+
     while true do
-        local code = LuaPrompt():ask()
+        local code = LuaPrompt {
+            history = history
+        }:ask()
+
+        table.insert(history, code)
 
         local fn, err = load("return " .. code, "croissant")
         if not fn then
