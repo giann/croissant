@@ -22,10 +22,13 @@ LuaPrompt = Class {
 
         self.multiline = options.multiline or ""
 
+        -- History
         self.history = options.history or {}
         self.historyIndex = #self.history + 1
         self.historyPrefixIndex = ""
 
+        -- Lexing
+        self.tokens = {}
         self.lexer = Lexer()
         -- Buffer whithout colors
         self.highlightedBuffer = ""
@@ -105,6 +108,8 @@ function LuaPrompt:selectHistory(dt)
 end
 
 function LuaPrompt:renderHighlighted()
+    self.tokens = {}
+
     self.highlightedBuffer = ""
     local lastIndex
     for kind, text, index in self.lexer:tokenize(self.buffer) do
@@ -114,6 +119,12 @@ function LuaPrompt:renderHighlighted()
             .. colors.reset
 
         lastIndex = index
+
+        table.insert(self.tokens, {
+            kind = kind,
+            index = index,
+            text = text
+        })
     end
 
     if lastIndex then
@@ -122,7 +133,54 @@ function LuaPrompt:renderHighlighted()
     end
 end
 
+function LuaPrompt:getCurrentToken()
+    local currentToken
+    for i, token in ipairs(self.tokens) do
+        if token.index + utf8.len(token.text) >= self.currentPosition.x then
+            break
+        end
+
+        currentToken = i
+    end
+
+    return currentToken
+end
+
+local keywords = {
+    "and", "break", "do", "else", "elseif", "end",
+    "false", "for", "function", "goto", "if", "in",
+    "local", "nil", "not", "or", "repeat", "return",
+    "then", "true", "until", "while"
+}
+
 function LuaPrompt:complete()
+    local currentToken = self:getCurrentToken()
+
+    if currentToken then
+        currentToken = self.tokens[currentToken]
+        local currentPart = self.buffer:sub(currentToken.index + #currentToken.text)
+
+        local possibleValues = {}
+        if self.tokens[currentToken - 1].text:match("[.:]")
+            and self.tokens[currentToken - 2].kind == "identifier" then
+            -- Explore identifier
+
+        elseif self.tokens[currentToken].kind == "withespace" then
+            -- Explore _G + keywords
+            for _, k in ipairs(keywords) do
+                if k:sub(1, #currentPart) == currentPart then
+                    table.insert(possibleValues, k)
+                end
+            end
+
+            for k, _ in pairs(_G) do
+                if k:sub(1, #currentPart) == currentPart then
+                    table.insert(possibleValues, k)
+                end
+            end
+        end
+
+    end
 end
 
 function LuaPrompt.validateLua(code)
