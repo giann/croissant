@@ -24,4 +24,5 @@ dependencies = {
     "lua >= 5.3",
     "sirocco",
     "hump >= 0.4-2",
+    "lpeg >= 1.0.1-1",
 }
