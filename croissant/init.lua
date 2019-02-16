@@ -59,29 +59,49 @@ return function()
     print(COPYRIGHT)
 
     local history = {}
+    local multiline = false
 
     while true do
         local code = LuaPrompt {
+            prompt = multiline and "→     ",
+            multiline = multiline,
             history = history
         }:ask()
 
         table.insert(history, code)
 
-        local fn, err = load("return " .. code, "croissant")
+        local fn, err = load("return " .. (multiline or "") .. code, "croissant")
         if not fn then
-            fn, err = load(code, "croissant")
+            fn, err = load((multiline or "") .. code, "croissant")
         end
 
         if fn then
-            local result = table.pack(fn())
-            local dumps = {}
-            for _, r in ipairs(result) do
-                table.insert(dumps, dump(r))
-            end
+            multiline = false
 
-            print(table.concat(dumps))
+            local result = table.pack(xpcall(fn, debug.traceback))
+
+            if result[1] then
+                local dumps = {}
+                for i = 2, #result do
+                    local r = result[i]
+                    table.insert(dumps, dump(r))
+                end
+
+                print(table.concat(dumps, "\t"))
+            else
+                print(
+                    colors.red
+                    .. result[2]
+                    .. colors.reset
+                )
+            end
         else
-            print(colors.red .. err .. colors.reset)
+            -- Syntax error near <eof>
+            if err:match("<eof>") or (err and multiline) then
+                multiline = (multiline or "") .. code .. "\n"
+            else
+                print(colors.red .. err .. colors.reset)
+            end
         end
     end
 end

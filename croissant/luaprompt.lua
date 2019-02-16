@@ -13,10 +13,14 @@ LuaPrompt = Class {
         options = options or {}
 
         Prompt.init(self, {
-            prompt = options.prompt or "> ", -- "🥐  ",
-            validator = LuaPrompt.validateLua,
+            prompt = options.prompt or "→ ", -- "🥐  ",
+            validator = function(code)
+                return LuaPrompt.validateLua(self.multiline .. code)
+            end,
             required = false
         })
+
+        self.multiline = options.multiline or ""
 
         self.history = options.history or {}
         self.historyIndex = #self.history + 1
