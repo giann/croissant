@@ -1,9 +1,13 @@
 <p align="center">
-    <img src="https://github.com/giann/croissant/raw/master/assets/croissant.gif" alt="croissant">
+    <img src="https://github.com/giann/croissant/raw/master/assets/logo.png" alt="croissant" width="304" height="304">
 </p>
 
 # Croissant
 🥐 A Lua REPL implemented in Lua
+
+<p align="center">
+    <img src="https://github.com/giann/croissant/raw/master/assets/croissant.gif" alt="croissant">
+</p>
 
 **Note:** Croissant is in active development.
 
