@@ -4,3 +4,36 @@
 
 # Croissant
 🥐 A Lua REPL implemented in Lua
+
+**Note:** Croissant is in active development.
+
+## Installation
+
+Requirements:
+- Lua 5.3
+- luarocks >= 3.0 (_Note: `hererocks -rlatest` will install 2.4, you need to specify it with `-r3.0`_)
+
+```bash
+luarocks install croissant
+```
+
+## Usage
+
+```bash
+lua -e "require 'croissant'()"
+```
+
+## Features
+
+- Syntax highlighting
+- Code interpreted as you type
+- History
+- Multiline
+- Formatted returned values
+
+## Todo
+
+- Autocompletion
+- Customization: keybinding, theme, etc.
+- Multiple Lua versions support
+- Debugging https://github.com/slembcke/debugger.lua
