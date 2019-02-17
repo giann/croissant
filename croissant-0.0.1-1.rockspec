@@ -15,7 +15,9 @@ description = {
 
 build = {
     modules = {
-        ["croissant"] = "croissant/init.lua",
+        ["croissant"]           = "croissant/init.lua",
+        ["croissant.luaprompt"] = "croissant/luaprompt.lua",
+        ["croissant.lexer"]     = "croissant/lexer.lua"
     },
     type = "builtin",
 }
