@@ -82,7 +82,7 @@ return function()
 
             if result[1] then
                 local dumps = {}
-                for i = 2, #result do
+                for i = 2, result.n do
                     local r = result[i]
                     table.insert(dumps, dump(r))
                 end
