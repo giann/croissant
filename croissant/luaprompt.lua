@@ -122,7 +122,7 @@ function LuaPrompt:renderHighlighted()
 
         table.insert(self.tokens, {
             kind = kind,
-            index = index,
+            index = index - utf8.len(text),
             text = text
         })
     end
@@ -134,16 +134,17 @@ function LuaPrompt:renderHighlighted()
 end
 
 function LuaPrompt:getCurrentToken()
-    local currentToken
+    local currentToken, currentTokenIndex
     for i, token in ipairs(self.tokens) do
-        if token.index + utf8.len(token.text) >= self.currentPosition.x then
+        currentToken = token
+        currentTokenIndex = i
+
+        if token.index + utf8.len(token.text) >= self.currentPosition.x + 1 then
             break
         end
-
-        currentToken = i
     end
 
-    return currentToken
+    return currentToken, currentTokenIndex
 end
 
 local keywords = {
@@ -154,32 +155,66 @@ local keywords = {
 }
 
 function LuaPrompt:complete()
-    local currentToken = self:getCurrentToken()
+    local currentToken, currentTokenIndex = self:getCurrentToken()
 
-    if currentToken then
-        currentToken = self.tokens[currentToken]
-        local currentPart = self.buffer:sub(currentToken.index + #currentToken.text)
-
-        local possibleValues = {}
-        if self.tokens[currentToken - 1].text:match("[.:]")
-            and self.tokens[currentToken - 2].kind == "identifier" then
-            -- Explore identifier
-
-        elseif self.tokens[currentToken].kind == "withespace" then
-            -- Explore _G + keywords
-            for _, k in ipairs(keywords) do
-                if k:sub(1, #currentPart) == currentPart then
-                    table.insert(possibleValues, k)
-                end
-            end
-
-            for k, _ in pairs(_G) do
-                if k:sub(1, #currentPart) == currentPart then
-                    table.insert(possibleValues, k)
-                end
+    local possibleValues = {}
+    local highlightedPossibleValues = {}
+    if currentToken.kind == "identifier" then
+        -- Search in _G
+        for k, _ in pairs(_G) do
+            if k:sub(1, #currentToken.text) == currentToken.text then
+                table.insert(possibleValues, k)
+                table.insert(highlightedPossibleValues,
+                    self.tokenColors.identifier .. k .. colors.reset)
             end
         end
 
+        -- Search in keywords
+        for _, k in ipairs(keywords) do
+            if k:sub(1, #currentToken.text) == currentToken.text then
+                table.insert(possibleValues, k)
+                table.insert(highlightedPossibleValues,
+                    self.tokenColors.keywords .. k .. colors.reset)
+            end
+        end
+    elseif currentToken.kind == "operator"
+        and (currentToken.text == "."
+            or currentToken.text == ":") then
+        -- TODO: this requires an AST
+        -- We need to be able to evaluate previous expression to search
+        -- possible values in it
+
+        if currentTokenIndex > 1
+            and self.tokens[currentTokenIndex - 1].kind == "identifier" then
+            local fn = load("return " .. self.tokens[currentTokenIndex - 1].text)
+            local parentTable = fn and fn()
+
+            if type(parentTable) == "table" then
+                for k, _ in pairs(parentTable) do
+                    table.insert(possibleValues, k)
+                    table.insert(highlightedPossibleValues,
+                        self.tokenColors.identifier .. k .. colors.reset)
+                end
+            end
+        end
+    end
+
+    local count = #possibleValues
+
+    if count > 1 then
+        self.message = table.concat(highlightedPossibleValues, " ")
+    elseif count == 1 then
+        local dt = utf8.len(possibleValues[1]) - utf8.len(currentToken.text)
+        self:insertAtCurrentPosition(possibleValues[1]:sub(#currentToken.text + 1))
+
+        self.currentPosition.x = self.currentPosition.x + dt
+
+        if self.validator then
+            local _, message = self.validator(self.buffer)
+            self.message = message
+        end
+
+        self:renderHighlighted()
     end
 end
 
