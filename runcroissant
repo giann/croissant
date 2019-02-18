@@ -1,3 +1,5 @@
 #!/usr/bin/env lua
 
+package.path = package.path .. ";./?/init.lua"
+
 require "croissant"()
