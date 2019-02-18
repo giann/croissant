@@ -63,7 +63,7 @@ return function()
 
     while true do
         local code = LuaPrompt {
-            prompt = multiline and "→     ",
+            prompt = multiline and ".... ",
             multiline = multiline,
             history = history
         }:ask()

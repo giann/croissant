@@ -30,8 +30,6 @@ LuaPrompt = Class {
         -- Lexing
         self.tokens = {}
         self.lexer = Lexer()
-        -- Buffer whithout colors
-        self.highlightedBuffer = ""
 
         self.tokenColors = options.colors or {
             constant   = colors.bright .. colors.yellow,
@@ -49,19 +47,17 @@ LuaPrompt = Class {
 function LuaPrompt:registerKeybinding()
     Prompt.registerKeybinding(self)
 
-    self.keybinding[Prompt.escapeCodes.cursor_up]   = function()
+    self.keybinding[Prompt.escapeCodes.key_up]   = function()
         self:selectHistory(-1)
     end
 
-    self.keybinding[Prompt.escapeCodes.cursor_down] = function()
+    self.keybinding[Prompt.escapeCodes.key_down] = function()
         self:selectHistory(1)
     end
 
-    local promptBackspace = self.keybinding["\127"]
-    self.keybinding["\127"] = function()
+    local promptBackspace = self.keybinding[Prompt.escapeCodes.key_backspace]
+    self.keybinding[Prompt.escapeCodes.key_backspace] = function()
         promptBackspace()
-
-        self:renderHighlighted()
 
         self.message = nil
     end
@@ -69,8 +65,6 @@ function LuaPrompt:registerKeybinding()
     local clearline = self.keybinding["\11"]
     self.keybinding["\11"] = function()
         clearline()
-
-        self:renderHighlighted()
 
         self.message = nil
     end
@@ -102,18 +96,16 @@ function LuaPrompt:selectHistory(dt)
     end
 
     self.buffer = filteredHistory[self.historyIndex] or self.buffer
-    self.currentPosition.x = utf8.len(self.buffer)
-
-    self:renderHighlighted()
+    self.bufferOffset = utf8.len(self.buffer)
 end
 
-function LuaPrompt:renderHighlighted()
+function LuaPrompt:renderDisplayBuffer()
     self.tokens = {}
 
-    self.highlightedBuffer = ""
+    self.displayBuffer = ""
     local lastIndex
     for kind, text, index in self.lexer:tokenize(self.buffer) do
-        self.highlightedBuffer = self.highlightedBuffer
+        self.displayBuffer = self.displayBuffer
             .. (self.tokenColors[kind] or "")
             .. text
             .. colors.reset
@@ -128,7 +120,7 @@ function LuaPrompt:renderHighlighted()
     end
 
     if lastIndex then
-        self.highlightedBuffer = self.highlightedBuffer
+        self.displayBuffer = self.displayBuffer
             .. self.buffer:sub(lastIndex)
     end
 end
@@ -139,7 +131,7 @@ function LuaPrompt:getCurrentToken()
         currentToken = token
         currentTokenIndex = i
 
-        if token.index + utf8.len(token.text) >= self.currentPosition.x + 1 then
+        if token.index + utf8.len(token.text) >= self.bufferOffset + 1 then
             break
         end
     end
@@ -207,14 +199,12 @@ function LuaPrompt:complete()
         local dt = utf8.len(possibleValues[1]) - utf8.len(currentToken.text)
         self:insertAtCurrentPosition(possibleValues[1]:sub(#currentToken.text + 1))
 
-        self.currentPosition.x = self.currentPosition.x + dt
+        self.bufferOffset = self.bufferOffset + dt
 
         if self.validator then
             local _, message = self.validator(self.buffer)
             self.message = message
         end
-
-        self:renderHighlighted()
     end
 end
 
@@ -225,23 +215,6 @@ function LuaPrompt.validateLua(code)
     end
 
     return fn, (err and colors.red .. err .. colors.reset)
-end
-
-function LuaPrompt:processInput(input)
-    Prompt.processInput(self, input)
-
-    self:renderHighlighted()
-end
-
-function LuaPrompt:render()
-    -- Swap with highlighted buffer for render
-    local buffer = self.buffer
-    self.buffer = self.highlightedBuffer
-
-    Prompt.render(self)
-
-    -- Restore buffer
-    self.buffer = buffer
 end
 
 function LuaPrompt:processedResult()
