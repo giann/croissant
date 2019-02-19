@@ -96,9 +96,7 @@ function LuaPrompt:selectHistory(dt)
     end
 
     self.buffer = filteredHistory[self.historyIndex] or self.buffer
-    self.bufferOffset = utf8.len(self.buffer) + 1
-
-    self:updateCurrentPosition()
+    self:setOffset(utf8.len(self.buffer) + 1)
 end
 
 function LuaPrompt:renderDisplayBuffer()
@@ -201,7 +199,7 @@ function LuaPrompt:complete()
         local dt = utf8.len(possibleValues[1]) - utf8.len(currentToken.text)
         self:insertAtCurrentPosition(possibleValues[1]:sub(#currentToken.text + 1))
 
-        self.bufferOffset = self.bufferOffset + dt
+        self:setOffset(self.bufferOffset + dt)
 
         if self.validator then
             local _, message = self.validator(self.buffer)

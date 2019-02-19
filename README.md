@@ -34,10 +34,11 @@ lua -e "require 'croissant'()"
 - History
 - Multiline
 - Formatted returned values
+- Basic auto-completion
 
 ## Todo
 
-- Autocompletion
+- Accurate auto-completion
 - Customization: keybinding, theme, etc.
 - Multiple Lua versions support
 - Debugging https://github.com/slembcke/debugger.lua
