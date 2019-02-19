@@ -58,7 +58,7 @@ local Lexer = Class {
                 + S"]{=>^[<;)*(%}+-:,.#&~|")
 
         -- Keywords
-        self.patterns.keywords =
+        self.patterns.keyword =
             (P"and"     + "break" + "do"       + "else" + "elseif" + "end"
               + "false" + "for"   + "function" + "goto" + "if"     + "in"
               + "local" + "nil"   + "not"      + "or"   + "repeat" + "return"
@@ -66,11 +66,11 @@ local Lexer = Class {
 
         -- Identifiers
         local ident = I * (I + D)^0
-        local expr = ('.' * ident)^0
+        -- local expr = ('.' * ident)^0
         self.patterns.identifier = lpeg.Cmt(
             ident,
             function(input, index)
-                return expr:match(input, index)
+                return index --expr:match(input, index)
             end
         )
 
@@ -80,7 +80,7 @@ local Lexer = Class {
         table.insert(self.patterns, "comment")
         table.insert(self.patterns, "number")
         table.insert(self.patterns, "operator")
-        table.insert(self.patterns, "keywords")
+        table.insert(self.patterns, "keyword")
         table.insert(self.patterns, "identifier")
 
         self:compile()

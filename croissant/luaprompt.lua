@@ -36,7 +36,7 @@ LuaPrompt = Class {
             comment    = colors.dim .. colors.cyan,
             number     = colors.yellow,
             operator   = colors.yellow,
-            keywords   = colors.bright .. colors.magenta,
+            keyword   = colors.bright .. colors.magenta,
             identifier = colors.blue,
         }
     end
@@ -144,7 +144,7 @@ function LuaPrompt:complete()
             if k:sub(1, #currentToken.text) == currentToken.text then
                 table.insert(possibleValues, k)
                 table.insert(highlightedPossibleValues,
-                    self.tokenColors.keywords .. k .. colors.reset)
+                    self.tokenColors.keyword .. k .. colors.reset)
             end
         end
     elseif currentToken.kind == "operator"
