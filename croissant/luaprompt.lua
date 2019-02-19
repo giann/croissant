@@ -96,7 +96,9 @@ function LuaPrompt:selectHistory(dt)
     end
 
     self.buffer = filteredHistory[self.historyIndex] or self.buffer
-    self.bufferOffset = utf8.len(self.buffer)
+    self.bufferOffset = utf8.len(self.buffer) + 1
+
+    self:updateCurrentPosition()
 end
 
 function LuaPrompt:renderDisplayBuffer()

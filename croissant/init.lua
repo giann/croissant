@@ -25,7 +25,7 @@ dump = function(t, inc, seen)
 
             if typeK == "table" and not seen[v] then
                 s = s  .. "["
-                    .. dump(k, inc + 1)
+                    .. dump(k, inc + 1, seen)
                     .. "] = "
             elseif typeK == "string" then
                 s = s .. colors.blue .. k:format("%q") .. colors.reset
@@ -37,9 +37,9 @@ dump = function(t, inc, seen)
             end
 
             if typeV == "table" and not seen[v] then
-                s = s .. dump(v, inc + 1) .. ",\n"
+                s = s .. dump(v, inc + 1, seen) .. ",\n"
             elseif typeV == "string" then
-                s = s .. colors.green .. "\"" .. v:format("%q") .. "\"" .. colors.reset .. ",\n"
+                s = s .. colors.green .. "\"" .. v .. "\"" .. colors.reset .. ",\n"
             else
                 s = s .. colors.yellow .. tostring(v) .. colors.reset .. ",\n"
             end
@@ -49,7 +49,7 @@ dump = function(t, inc, seen)
 
         return s
     elseif type(t) == "string" then
-        return colors.green .. "\"" .. t:format("%q") .. "\"" .. colors.reset
+        return colors.green .. "\"" .. t .. "\"" .. colors.reset
     end
 
     return colors.yellow .. tostring(t) .. colors.reset
@@ -87,7 +87,9 @@ return function()
                     table.insert(dumps, dump(r))
                 end
 
-                print(table.concat(dumps, "\t"))
+                if #dumps > 0 then
+                    print(table.concat(dumps, "\t"))
+                end
             else
                 print(
                     colors.red
