@@ -25,7 +25,6 @@ LuaPrompt = Class {
         -- History
         self.history = options.history or {}
         self.historyIndex = #self.history + 1
-        self.historyPrefixIndex = ""
 
         -- Lexing
         self.tokens = {}
@@ -71,31 +70,8 @@ function LuaPrompt:registerKeybinding()
 end
 
 function LuaPrompt:selectHistory(dt)
-    local filteredHistory = {}
-
-    if utf8.len(self.buffer) > 0 then
-        self.historyPrefixIndex = utf8.len(self.historyPrefixIndex) > 0
-            and self.historyPrefixIndex
-            or self.buffer
-
-        for _, entry in ipairs(self.history) do
-            if entry:sub(1, #self.historyPrefixIndex) == self.historyPrefixIndex then
-                table.insert(filteredHistory, entry)
-            end
-        end
-    else
-        filteredHistory = self.history
-    end
-
-    if utf8.len(self.historyPrefixIndex) > 0
-        and self.historyPrefixIndex ~= self.buffer:sub(1, #self.historyPrefixIndex) then
-        self.historyPrefixIndex = self.buffer
-        self.historyIndex = #filteredHistory
-    else
-        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #filteredHistory)
-    end
-
-    self.buffer = filteredHistory[self.historyIndex] or self.buffer
+    self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history)
+    self.buffer = self.history[self.historyIndex]
     self:setOffset(utf8.len(self.buffer) + 1)
 end
 
