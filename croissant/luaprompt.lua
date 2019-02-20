@@ -46,33 +46,21 @@ LuaPrompt = Class {
 function LuaPrompt:registerKeybinding()
     Prompt.registerKeybinding(self)
 
-    self.keybinding[Prompt.escapeCodes.key_up]   = function()
-        self:selectHistory(-1)
-    end
+    self.keybinding.command_get_next_history = {
+        Prompt.escapeCodes.key_down,
+        "\14", -- C-n
+    }
 
-    self.keybinding[Prompt.escapeCodes.key_down] = function()
-        self:selectHistory(1)
-    end
-
-    local promptBackspace = self.keybinding[Prompt.escapeCodes.key_backspace]
-    self.keybinding[Prompt.escapeCodes.key_backspace] = function()
-        promptBackspace()
-
-        self.message = nil
-    end
-
-    local clearline = self.keybinding["\11"]
-    self.keybinding["\11"] = function()
-        clearline()
-
-        self.message = nil
-    end
+    self.keybinding.command_get_previous_history = {
+        Prompt.escapeCodes.key_up,
+        "\16", -- C-p
+    }
 end
 
 function LuaPrompt:selectHistory(dt)
     if #self.history > 0 then
-        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history)
-        self.buffer = self.history[self.historyIndex]
+        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history + 1)
+        self.buffer = self.history[self.historyIndex] or ""
         self:setOffset(utf8.len(self.buffer) + 1)
     end
 end
@@ -124,7 +112,7 @@ local keywords = {
     "then", "true", "until", "while"
 }
 
-function LuaPrompt:complete()
+function LuaPrompt:command_complete()
     local currentToken, currentTokenIndex = self:getCurrentToken()
 
     local possibleValues = {}
@@ -197,6 +185,26 @@ end
 
 function LuaPrompt:processedResult()
     return self.buffer
+end
+
+function LuaPrompt:command_get_next_history()
+    self:selectHistory(1)
+end
+
+function LuaPrompt:command_get_previous_history()
+    self:selectHistory(-1)
+end
+
+function LuaPrompt:command_delete_back()
+    Prompt.command_delete_back(self)
+
+    self.message = nil
+end
+
+function LuaPrompt:command_kill_line()
+    Prompt.command_kill_line(self)
+
+    self.message = nil
 end
 
 return LuaPrompt
