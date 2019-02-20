@@ -70,9 +70,11 @@ function LuaPrompt:registerKeybinding()
 end
 
 function LuaPrompt:selectHistory(dt)
-    self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history)
-    self.buffer = self.history[self.historyIndex]
-    self:setOffset(utf8.len(self.buffer) + 1)
+    if #self.history > 0 then
+        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history)
+        self.buffer = self.history[self.historyIndex]
+        self:setOffset(utf8.len(self.buffer) + 1)
+    end
 end
 
 function LuaPrompt:renderDisplayBuffer()
