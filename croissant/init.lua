@@ -15,7 +15,10 @@ dump = function(t, inc, seen)
 
         seen[t] = true
 
-        s = s .. colors.yellow .. tostring(t) .. colors.reset .. ": {\n"
+        s = s
+            .. "{  "
+            .. colors.dim .. colors.cyan .. "-- " .. tostring(t) .. colors.reset
+            .. "\n"
 
         for k, v in pairs(t) do
             s = s .. ("     "):rep(inc)
