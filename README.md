@@ -24,13 +24,14 @@ luarocks install croissant
 ## Usage
 
 ```bash
-lua -e "require 'croissant'()"
+# Make sure lua/luarocks binaries are in your $PATH (~/.luarocks/bin)
+croissant
 ```
 
 ## Features
 
 - Syntax highlighting
-- Code interpreted as you type
+- Code parsed as you type
 - History
 - Multiline
 - Formatted returned values
