@@ -65,7 +65,7 @@ function LuaPrompt:selectHistory(dt)
     if #self.history > 0 then
         self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history + 1)
         self.buffer = self.history[self.historyIndex] or ""
-        self:setOffset(utf8.len(self.buffer) + 1)
+        self:setOffset(Prompt.len(self.buffer) + 1)
     end
 end
 
@@ -84,7 +84,7 @@ function LuaPrompt:renderDisplayBuffer()
 
         table.insert(self.tokens, {
             kind = kind,
-            index = index - utf8.len(text),
+            index = index - Prompt.len(text),
             text = text
         })
     end
@@ -101,7 +101,7 @@ function LuaPrompt:getCurrentToken()
         currentToken = token
         currentTokenIndex = i
 
-        if token.index + utf8.len(token.text) >= self.bufferOffset + 1 then
+        if token.index + Prompt.len(token.text) >= self.bufferOffset + 1 then
             break
         end
     end
@@ -166,7 +166,7 @@ function LuaPrompt:command_complete()
     if count > 1 then
         self.message = table.concat(highlightedPossibleValues, " ")
     elseif count == 1 then
-        local dt = utf8.len(possibleValues[1]) - utf8.len(currentToken.text)
+        local dt = Prompt.len(possibleValues[1]) - Prompt.len(currentToken.text)
         self:insertAtCurrentPosition(possibleValues[1]:sub(#currentToken.text + 1))
 
         self:setOffset(self.bufferOffset + dt)
