@@ -42,3 +42,4 @@ luac.out
 # Those are linked
 sirocco
 tui
+utf8_simple.lua

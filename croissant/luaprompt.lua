@@ -91,7 +91,7 @@ function LuaPrompt:renderDisplayBuffer()
 
     if lastIndex then
         self.displayBuffer = self.displayBuffer
-            .. self.buffer:sub(lastIndex)
+            .. self.buffer:utf8sub(lastIndex)
     end
 end
 
@@ -124,7 +124,7 @@ function LuaPrompt:command_complete()
     if currentToken.kind == "identifier" then
         -- Search in _G
         for k, _ in pairs(_G) do
-            if k:sub(1, #currentToken.text) == currentToken.text then
+            if k:utf8sub(1, #currentToken.text) == currentToken.text then
                 table.insert(possibleValues, k)
                 table.insert(highlightedPossibleValues,
                     self.tokenColors.identifier .. k .. colors.reset)
@@ -133,7 +133,7 @@ function LuaPrompt:command_complete()
 
         -- Search in keywords
         for _, k in ipairs(keywords) do
-            if k:sub(1, #currentToken.text) == currentToken.text then
+            if k:utf8sub(1, #currentToken.text) == currentToken.text then
                 table.insert(possibleValues, k)
                 table.insert(highlightedPossibleValues,
                     self.tokenColors.keywords .. k .. colors.reset)
@@ -167,7 +167,7 @@ function LuaPrompt:command_complete()
         self.message = table.concat(highlightedPossibleValues, " ")
     elseif count == 1 then
         local dt = Prompt.len(possibleValues[1]) - Prompt.len(currentToken.text)
-        self:insertAtCurrentPosition(possibleValues[1]:sub(#currentToken.text + 1))
+        self:insertAtCurrentPosition(possibleValues[1]:utf8sub(#currentToken.text + 1))
 
         self:setOffset(self.bufferOffset + dt)
 
