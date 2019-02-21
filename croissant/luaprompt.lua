@@ -15,7 +15,7 @@ LuaPrompt = Class {
         options = options or {}
 
         Prompt.init(self, {
-            prompt = options.prompt or "→ ", -- "🥐  ",
+            prompt = options.prompt or "→ ",
             validator = function(code)
                 return LuaPrompt.validateLua(self.multiline .. code)
             end,
