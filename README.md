@@ -11,6 +11,8 @@
 
 **Note:** Croissant is in active development.
 
+Croissant is based on [sirocco](https://github.com/giann/sirocco).
+
 ## Installation
 
 Requirements:
