@@ -3,8 +3,8 @@ local colors = require "term.colors"
 local LuaPrompt = require "croissant.luaprompt"
 
 local COPYRIGHT =
-    "🥐  Croissant 0.0.1  (C) 2019 Benoit Giannangeli\n" ..
-    "Lua 5.3.5  Copyright (C) 1994-2018 Lua.org, PUC-Rio"
+    "🥐  Croissant 0.0.1  (C) 2019 Benoit Giannangeli\n"
+    .. _VERSION ..  " Copyright (C) 1994-2018 Lua.org, PUC-Rio"
 
 local dump
 dump = function(t, inc, seen)
