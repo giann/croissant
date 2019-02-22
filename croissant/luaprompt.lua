@@ -2,6 +2,7 @@ local Class  = require "hump.class"
 local colors = require "term.colors"
 local Prompt = require "sirocco.prompt"
 local char   = require "sirocco.char"
+local help   = require "croissant.help"
 local C, Esc = char.C, char.Esc
 
 local Lexer = require "croissant.lexer"
@@ -67,6 +68,10 @@ function LuaPrompt:registerKeybinding()
     self.keybinding.command_abort = {
         C "g"
     }
+
+    self.keybinding.command_help = {
+        C " "
+    }
 end
 
 function LuaPrompt:selectHistory(dt)
@@ -81,6 +86,8 @@ function LuaPrompt:renderDisplayBuffer()
     self.tokens = {}
 
     self.displayBuffer = ""
+
+    -- Lua code
     local lastIndex
     for kind, text, index in self.lexer:tokenize(self.buffer) do
         self.displayBuffer = self.displayBuffer
@@ -217,6 +224,23 @@ function LuaPrompt:command_kill_line()
     Prompt.command_kill_line(self)
 
     self.message = nil
+end
+
+function LuaPrompt:command_help()
+    local currentToken = self:getCurrentToken()
+
+    if currentToken.kind == "identifier" then
+        local doc = help[currentToken.text]
+
+        if doc then
+            self.message =
+                colors.magenta " ? "
+                .. colors.blue .. doc.title .. colors.reset
+                .. "\n" .. colors.white .. doc.body
+                .. colors.reset
+                .. "\n"
+        end
+    end
 end
 
 return LuaPrompt

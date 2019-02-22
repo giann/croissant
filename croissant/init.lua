@@ -63,8 +63,13 @@ return function()
 
     local history = {}
     local multiline = false
+    local finished = false
 
-    while true do
+    _G.quit = function()
+        finished = true
+    end
+
+    while not finished do
         local code = LuaPrompt {
             prompt = multiline and ".... ",
             multiline = multiline,
