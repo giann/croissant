@@ -2,7 +2,6 @@ local Class  = require "hump.class"
 local colors = require "term.colors"
 local Prompt = require "sirocco.prompt"
 local char   = require "sirocco.char"
-local help   = require "croissant.help"
 local C, Esc = char.C, char.Esc
 
 local Lexer = require "croissant.lexer"
@@ -226,7 +225,14 @@ function LuaPrompt:command_kill_line()
     self.message = nil
 end
 
+local function trim(str)
+    return str:gsub("%s*$", ""):gsub("^%s*","")
+end
+
 function LuaPrompt:command_help()
+    -- Could be expensive do it only when help is used
+    local help = require "croissant.help"
+
     local currentToken = self:getCurrentToken()
 
     if currentToken.kind == "identifier" then
@@ -235,8 +241,8 @@ function LuaPrompt:command_help()
         if doc then
             self.message =
                 colors.magenta " ? "
-                .. colors.blue .. doc.title .. colors.reset
-                .. "\n" .. colors.white .. doc.body
+                .. colors.blue .. trim(doc.title) .. colors.reset
+                .. "\n" .. colors.white .. trim(doc.body)
                 .. colors.reset
                 .. "\n"
         end

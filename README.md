@@ -38,6 +38,7 @@ croissant
 - Multiline
 - Formatted returned values
 - Basic auto-completion
+- Contextual help (`C-h` on an identifier)
 
 ## Todo
 
