@@ -2,7 +2,7 @@ local Class  = require "hump.class"
 local colors = require "term.colors"
 local Prompt = require "sirocco.prompt"
 local char   = require "sirocco.char"
-local C, M   = char.C, char.M
+local C, Esc = char.C, char.Esc
 
 local Lexer = require "croissant.lexer"
 
@@ -51,13 +51,21 @@ function LuaPrompt:registerKeybinding()
     self.keybinding.command_get_next_history = {
         Prompt.escapeCodes.key_down,
         C "n",
-        "\27[B", -- backup
+        Esc "[B", -- backup
     }
 
     self.keybinding.command_get_previous_history = {
         Prompt.escapeCodes.key_up,
         C "p",
-        "\27[A", -- backup
+        Esc "[A", -- backup
+    }
+
+    self.keybinding.command_exit = {
+        C "c"
+    }
+
+    self.keybinding.command_abort = {
+        C "g"
     }
 end
 
