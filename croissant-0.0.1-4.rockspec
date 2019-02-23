@@ -17,7 +17,9 @@ build = {
     modules = {
         ["croissant"]           = "croissant/init.lua",
         ["croissant.luaprompt"] = "croissant/luaprompt.lua",
-        ["croissant.lexer"]     = "croissant/lexer.lua"
+        ["croissant.lexer"]     = "croissant/lexer.lua",
+        ["croissant.help"]      = "croissant/help.lua",
+        ["croissant.conf"]      = "croissant/conf.lua",
     },
     type = "builtin",
     install = {

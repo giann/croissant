@@ -1,4 +1,5 @@
 local colors = require "term.colors"
+local conf   = require "croissant.conf"
 
 local LuaPrompt = require "croissant.luaprompt"
 
@@ -64,6 +65,7 @@ return function()
     local history = {}
     local multiline = false
     local finished = false
+    local help = require(conf.help)
 
     _G.quit = function()
         finished = true
@@ -71,9 +73,11 @@ return function()
 
     while not finished do
         local code = LuaPrompt {
-            prompt = multiline and ".... ",
-            multiline = multiline,
-            history = history
+            prompt      = multiline and conf.continuationPrompt or conf.prompt,
+            multiline   = multiline,
+            history     = history,
+            tokenColors = conf.syntaxColors,
+            help        = help
         }:ask()
 
         table.insert(history, code)

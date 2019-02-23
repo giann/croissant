@@ -32,15 +32,9 @@ LuaPrompt = Class {
         self.tokens = {}
         self.lexer = Lexer()
 
-        self.tokenColors = options.colors or {
-            constant   = colors.bright .. colors.yellow,
-            string     = colors.green,
-            comment    = colors.dim .. colors.cyan,
-            number     = colors.yellow,
-            operator   = colors.yellow,
-            keywords   = colors.bright .. colors.magenta,
-            identifier = colors.blue,
-        }
+        self.tokenColors = options.tokenColors
+
+        self.help = options.help
     end
 
 }
@@ -69,7 +63,8 @@ function LuaPrompt:registerKeybinding()
     }
 
     self.keybinding.command_help = {
-        C " "
+        C " ",
+        Esc " ",
     }
 end
 
@@ -230,13 +225,10 @@ local function trim(str)
 end
 
 function LuaPrompt:command_help()
-    -- Could be expensive do it only when help is used
-    local help = require "croissant.help"
-
     local currentToken = self:getCurrentToken()
 
     if currentToken.kind == "identifier" then
-        local doc = help[currentToken.text]
+        local doc = self.help[currentToken.text]
 
         if doc then
             self.message =
