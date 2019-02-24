@@ -3,6 +3,12 @@ local conf   = require "croissant.conf"
 
 local LuaPrompt = require "croissant.luaprompt"
 
+if tonumber(_VERSION:match("Lua (%d+)")) < 5
+    or tonumber(_VERSION:match("Lua %d+%.(%d+)")) < 3 then
+    print(colors.red "Croissant requires at least Lua 5.3")
+    os.exit(1)
+end
+
 local COPYRIGHT =
     "🥐  Croissant 0.0.1  (C) 2019 Benoit Giannangeli\n"
     .. _VERSION ..  " Copyright (C) 1994-2018 Lua.org, PUC-Rio"
