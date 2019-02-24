@@ -39,6 +39,7 @@ croissant
 - Formatted returned values
 - Basic auto-completion
 - Contextual help (`C-h` on an identifier)
+- Persistent history
 
 ## Todo
 

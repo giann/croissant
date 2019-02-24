@@ -24,9 +24,12 @@ LuaPrompt = Class {
 
         self.multiline = options.multiline or ""
 
+        -- Leave function
+        self.quit = options.quit
+
         -- History
         self.history = options.history or {}
-        self.historyIndex = #self.history + 1
+        self.historyIndex = 0
 
         -- Lexing
         self.tokens = {}
@@ -55,10 +58,11 @@ function LuaPrompt:registerKeybinding()
     }
 
     self.keybinding.command_exit = {
-        C "c"
+        -- Not allowed
     }
 
     self.keybinding.command_abort = {
+        C "c",
         C "g"
     }
 
@@ -70,7 +74,7 @@ end
 
 function LuaPrompt:selectHistory(dt)
     if #self.history > 0 then
-        self.historyIndex = math.min(math.max(1, self.historyIndex + dt), #self.history + 1)
+        self.historyIndex = math.min(math.max(0, self.historyIndex + dt), #self.history + 1)
         self.buffer = self.history[self.historyIndex] or ""
         self:setOffset(Prompt.len(self.buffer) + 1)
     end
@@ -201,11 +205,11 @@ function LuaPrompt:processedResult()
 end
 
 function LuaPrompt:command_get_next_history()
-    self:selectHistory(1)
+    self:selectHistory(-1)
 end
 
 function LuaPrompt:command_get_previous_history()
-    self:selectHistory(-1)
+    self:selectHistory(1)
 end
 
 function LuaPrompt:command_delete_back()
@@ -218,6 +222,12 @@ function LuaPrompt:command_kill_line()
     Prompt.command_kill_line(self)
 
     self.message = nil
+end
+
+function LuaPrompt:command_abort()
+    Prompt.command_abort(self)
+
+    self.quit()
 end
 
 local function trim(str)

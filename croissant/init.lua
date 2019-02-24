@@ -71,16 +71,33 @@ return function()
         finished = true
     end
 
+    -- Load history
+    local historyFile, _ = io.open(os.getenv "HOME" .. "/.croissant_history", "a+")
+
+    if historyFile then
+        for line in historyFile:lines() do
+            if line ~= "" then
+                table.insert(history, 1, ({line:gsub("\\n", "\n")})[1])
+            end
+        end
+    else
+        print(colors.yellow "Could not load history file at " .. os.getenv "HOME" .. "/.croissant_history")
+    end
+
     while not finished do
         local code = LuaPrompt {
             prompt      = multiline and conf.continuationPrompt or conf.prompt,
             multiline   = multiline,
             history     = history,
             tokenColors = conf.syntaxColors,
-            help        = help
+            help        = help,
+            quit        = _G.quit
         }:ask()
 
-        table.insert(history, code)
+        if code ~= "" then
+            table.insert(history, 1, code)
+            historyFile:write(code:gsub("\n", "\\n") .. "\n")
+        end
 
         local fn, err = load("return " .. (multiline or "") .. code, "croissant")
         if not fn then
@@ -114,8 +131,11 @@ return function()
             if err:match("<eof>") or (err and multiline) then
                 multiline = (multiline or "") .. code .. "\n"
             else
+                multiline = nil
                 print(colors.red .. err .. colors.reset)
             end
         end
     end
+
+    historyFile:close()
 end
