@@ -100,7 +100,7 @@ return function()
             quit        = _G.quit
         }:ask()
 
-        if code ~= "" then
+        if code ~= "" and (not history[1] or history[1] ~= code) then
             table.insert(history, 1, code)
             historyFile:write(code:gsub("\n", "\\n") .. "\n")
         end
