@@ -1,8 +1,8 @@
 local colors    = require "term.colors"
-local dump      = require "croissant.utils".dump
 local conf      = require "croissant.conf"
 local LuaPrompt = require "croissant.luaprompt"
 local Lexer     = require "croissant.lexer"
+local runChunk  = require "croissant.do".runChunk
 
 local function doREPL(frame, commands)
     local _, where = commands.where()
@@ -39,56 +39,10 @@ local function doREPL(frame, commands)
         end
 
         if not cmd then
-            local fn, err = load("return " .. (multiline or "") .. code, "croissant")
-            if not fn then
-                fn, err = load((multiline or "") .. code, "croissant")
-            end
-
-            if fn then
-                multiline = false
-
-                local result = table.pack(xpcall(fn, debug.traceback))
-
-                if result[1] then
-                    local dumps = {}
-                    for i = 2, result.n do
-                        local r = result[i]
-                        table.insert(dumps, dump(r))
-                    end
-
-                    if #dumps > 0 then
-                        print(table.concat(dumps, "\t"))
-                    else
-                        -- Look for assignments
-                        local names = { code:match("^([^{=]+)%s?=[^=]") }
-                        if names then
-                            dumps = {}
-                            for _, n in ipairs(names) do
-                                local assignement = load("return " .. n)
-                                local assigned = assignement and assignement()
-                                if assigned then
-                                    table.insert(dumps, dump(assigned))
-                                end
-                            end
-
-                            print(table.concat(dumps, "\t"))
-                        end
-                    end
-                else
-                    print(
-                        colors.red
-                        .. result[2]
-                        .. colors.reset
-                    )
-                end
+            if runChunk((multiline or "") .. code) then
+                multiline = (multiline or "") .. code .. "\n"
             else
-                -- Syntax error near <eof>
-                if err:match("<eof>") or (err and multiline) then
-                    multiline = (multiline or "") .. code .. "\n"
-                else
-                    multiline = nil
-                    print(colors.red .. err .. colors.reset)
-                end
+                multiline = nil
             end
         end
     end
