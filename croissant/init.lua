@@ -72,6 +72,21 @@ return function()
 
                 if #dumps > 0 then
                     print(table.concat(dumps, "\t"))
+                else
+                    -- Look for assignments
+                    local names = { code:match("^([^{=]+)%s?=[^=]") }
+                    if names then
+                        dumps = {}
+                        for _, n in ipairs(names) do
+                            local assignement = load("return " .. n)
+                            local assigned = assignement and assignement()
+                            if assigned then
+                                table.insert(dumps, dump(assigned))
+                            end
+                        end
+
+                        print(table.concat(dumps, "\t"))
+                    end
                 end
             else
                 print(
