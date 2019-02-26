@@ -134,61 +134,63 @@ local keywords = {
 function LuaPrompt:command_complete()
     local currentToken, currentTokenIndex = self:getCurrentToken()
 
-    local possibleValues = {}
-    local highlightedPossibleValues = {}
-    if currentToken.kind == "identifier" then
-        -- Search in _G
-        for k, _ in pairs(self.env) do
-            if k:utf8sub(1, #currentToken.text) == currentToken.text then
-                table.insert(possibleValues, k)
-                table.insert(highlightedPossibleValues,
-                    self.tokenColors.identifier .. k .. colors.reset)
-            end
-        end
-
-        -- Search in keywords
-        for _, k in ipairs(keywords) do
-            if k:utf8sub(1, #currentToken.text) == currentToken.text then
-                table.insert(possibleValues, k)
-                table.insert(highlightedPossibleValues,
-                    self.tokenColors.keywords .. k .. colors.reset)
-            end
-        end
-    elseif currentToken.kind == "operator"
-        and (currentToken.text == "."
-            or currentToken.text == ":") then
-        -- TODO: this requires an AST
-        -- We need to be able to evaluate previous expression to search
-        -- possible values in it
-
-        if currentTokenIndex > 1
-            and self.tokens[currentTokenIndex - 1].kind == "identifier" then
-            local fn = load("return " .. self.tokens[currentTokenIndex - 1].text, "lookup", "t", self.env)
-            local parentTable = fn and fn()
-
-            if type(parentTable) == "table" then
-                for k, _ in pairs(parentTable) do
+    if currentToken then
+        local possibleValues = {}
+        local highlightedPossibleValues = {}
+        if currentToken.kind == "identifier" then
+            -- Search in _G
+            for k, _ in pairs(self.env) do
+                if k:utf8sub(1, #currentToken.text) == currentToken.text then
                     table.insert(possibleValues, k)
                     table.insert(highlightedPossibleValues,
                         self.tokenColors.identifier .. k .. colors.reset)
                 end
             end
+
+            -- Search in keywords
+            for _, k in ipairs(keywords) do
+                if k:utf8sub(1, #currentToken.text) == currentToken.text then
+                    table.insert(possibleValues, k)
+                    table.insert(highlightedPossibleValues,
+                        self.tokenColors.keywords .. k .. colors.reset)
+                end
+            end
+        elseif currentToken.kind == "operator"
+            and (currentToken.text == "."
+                or currentToken.text == ":") then
+            -- TODO: this requires an AST
+            -- We need to be able to evaluate previous expression to search
+            -- possible values in it
+
+            if currentTokenIndex > 1
+                and self.tokens[currentTokenIndex - 1].kind == "identifier" then
+                local fn = load("return " .. self.tokens[currentTokenIndex - 1].text, "lookup", "t", self.env)
+                local parentTable = fn and fn()
+
+                if type(parentTable) == "table" then
+                    for k, _ in pairs(parentTable) do
+                        table.insert(possibleValues, k)
+                        table.insert(highlightedPossibleValues,
+                            self.tokenColors.identifier .. k .. colors.reset)
+                    end
+                end
+            end
         end
-    end
 
-    local count = #possibleValues
+        local count = #possibleValues
 
-    if count > 1 then
-        self.message = table.concat(highlightedPossibleValues, " ")
-    elseif count == 1 then
-        local dt = Prompt.len(possibleValues[1]) - Prompt.len(currentToken.text)
-        self:insertAtCurrentPosition(possibleValues[1]:utf8sub(#currentToken.text + 1))
+        if count > 1 then
+            self.message = table.concat(highlightedPossibleValues, " ")
+        elseif count == 1 then
+            local dt = Prompt.len(possibleValues[1]) - Prompt.len(currentToken.text)
+            self:insertAtCurrentPosition(possibleValues[1]:utf8sub(#currentToken.text + 1))
 
-        self:setOffset(self.bufferOffset + dt)
+            self:setOffset(self.bufferOffset + dt)
 
-        if self.validator then
-            local _, message = self.validator(self.buffer)
-            self.message = message
+            if self.validator then
+                local _, message = self.validator(self.buffer)
+                self.message = message
+            end
         end
     end
 end

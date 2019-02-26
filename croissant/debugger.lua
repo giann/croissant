@@ -7,64 +7,6 @@ local runChunk    = cdo.runChunk
 local frameEnv    = cdo.frameEnv
 local bindInFrame = cdo.bindInFrame
 
-local function doREPL(commands, history)
-    local _, where = commands.where()
-    print(colors.reset .. "\n" .. where .. "\n")
-
-    local fenv, rawenv = frameEnv(true)
-    local env = setmetatable({}, {
-        __index = fenv,
-        __newindex = function(env, name, value)
-            bindInFrame(8, name, value, env)
-        end
-    })
-
-    local multiline
-    while true do
-        local info = debug.getinfo(4)
-
-        local code = LuaPrompt {
-            env         = rawenv,
-            prompt      = "["
-                .. colors.green(info.short_src)
-                .. (info.name and ":" .. colors.blue(info.name) or "")
-                .. (info.currentline > 0 and ":" .. colors.yellow(info.currentline) or "")
-                .. "] "
-                .. (not multiline and "→ " or ".... "),
-            multiline   = multiline,
-            history     = history,
-            tokenColors = conf.syntaxColors,
-            help        = require(conf.help),
-            quit        = function() end
-        }:ask()
-
-        -- Is it a command ?
-        local cmd
-        for command, fn in pairs(commands) do
-            if command == code then
-                cmd = command
-                if fn() then
-                    return
-                end
-            end
-        end
-
-        if code ~= "" and (not history[1] or history[1] ~= code) then
-            table.insert(history, 1, code)
-
-            cdo.appendToDebugHistory(code)
-        end
-
-        if not cmd then
-            if runChunk((multiline or "") .. code, env) then
-                multiline = (multiline or "") .. code .. "\n"
-            else
-                multiline = nil
-            end
-        end
-    end
-end
-
 local function highlight(code)
     local lexer = Lexer()
     local highlighted = ""
@@ -84,6 +26,7 @@ return function()
 
     local frame = 0
     local frameLimit = -2
+    local currentFrame = 0
 
     local commands
     commands = {
@@ -103,11 +46,15 @@ return function()
         end,
 
         up = function()
-            return true
+            currentFrame = currentFrame + 1
+
+            return false
         end,
 
         down = function()
-            return true
+            currentFrame = math.max(0, currentFrame - 1)
+
+            return false
         end,
 
         trace = function()
@@ -119,7 +66,7 @@ return function()
 
                 if info then
                     trace = trace ..
-                        (i - 4 == 0
+                        (i - 4 == currentFrame
                             and colors.bright(colors.green("    ❱ " .. (i - 4) .. " │ "))
                             or  colors.bright(colors.black("      " .. (i - 4) .. " │ ")))
                         .. colors.green(info.short_src) .. ":"
@@ -133,10 +80,12 @@ return function()
             until not info
 
             print("\n" .. trace)
+
+            return false
         end,
 
         where = function()
-            local info = debug.getinfo(4)
+            local info = debug.getinfo(4 + (currentFrame or 0))
 
             local source = ""
             local srcType = info.source:sub(1, 1)
@@ -176,6 +125,12 @@ return function()
                 end
             end
 
+            print("\n      [" .. currentFrame .. "] " .. colors.green(info.short_src) .. ":"
+                    .. (info.currentline > 0 and colors.yellow(info.currentline) .. ":" or "")
+                    .. " in " .. colors.magenta(info.namewhat)
+                    .. colors.blue((info.name and " " .. info.name) or (info.what == "main" and "main chunk") or " ?"))
+            print(colors.reset .. w)
+
             return false, w
         end,
 
@@ -185,15 +140,78 @@ return function()
         end,
     }
 
+    local function doREPL()
+        local rframe, fenv, env, rawenv, multiline
+        while true do
+            if rframe ~= currentFrame then
+                rframe = currentFrame
+
+                commands.where()
+
+                fenv, rawenv = frameEnv(true, currentFrame)
+                env = setmetatable({}, {
+                    __index = fenv,
+                    __newindex = function(env, name, value)
+                        bindInFrame(8 + currentFrame, name, value, env)
+                    end
+                })
+            end
+
+            local info = debug.getinfo(3 + (currentFrame or 0))
+
+            local code = LuaPrompt {
+                env         = rawenv,
+                prompt      = colors.reset
+                    .. "[" .. currentFrame .. "]"
+                    .. "["
+                    .. colors.green(info.short_src)
+                    .. (info.name and ":" .. colors.blue(info.name) or "")
+                    .. (info.currentline > 0 and ":" .. colors.yellow(info.currentline) or "")
+                    .. "] "
+                    .. (not multiline and "→ " or ".... "),
+                multiline   = multiline,
+                history     = history,
+                tokenColors = conf.syntaxColors,
+                help        = require(conf.help),
+                quit        = function() end
+            }:ask()
+
+            -- Is it a command ?
+            local cmd
+            for command, fn in pairs(commands) do
+                if command == code then
+                    cmd = command
+                    if fn() then
+                        return
+                    end
+                end
+            end
+
+            if code ~= "" and (not history[1] or history[1] ~= code) then
+                table.insert(history, 1, code)
+
+                cdo.appendToDebugHistory(code)
+            end
+
+            if not cmd then
+                if runChunk((multiline or "") .. code, env) then
+                    multiline = (multiline or "") .. code .. "\n"
+                else
+                    multiline = nil
+                end
+            end
+        end
+    end
+
     debug.sethook(function(event, line)
         if event == "line" and frame <= frameLimit then
-            doREPL(commands, history)
+            doREPL(currentFrame, commands, history)
         elseif event == "call" then
             frame = frame + 1
-            print("+", frame)
+            currentFrame = 0
         elseif event == "return" then
             frame = frame - 1
-            print("-", frame)
+            currentFrame = 0
         end
     end, "clr")
 end

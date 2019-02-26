@@ -53,11 +53,15 @@ dump = function(t, inc, seen)
     return colors.yellow .. tostring(t) .. colors.reset
 end
 
-local function frameEnv(withGlobals)
-    local level = 5
+local function frameEnv(withGlobals, frameOffset)
+    local level = 5 + (frameOffset or 0)
     local func = debug.getinfo(level - 1).func
     local env = {}
-    local rawenv = _G
+    -- Shallow copy of _G
+    local rawenv = {}
+    for k, v in pairs(_G) do
+        rawenv[k] = v
+    end
     local i
 
     -- Retrieve the upvalues
@@ -107,6 +111,7 @@ local function frameEnv(withGlobals)
     end
 
     if withGlobals then
+        env._ENV = env._ENV or {}
         return setmetatable(env._ENV, {__index = env or _G}), rawenv
     else
         return env
