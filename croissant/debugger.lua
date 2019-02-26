@@ -80,7 +80,7 @@ local function highlight(code)
 end
 
 return function()
-    local history = cdo.loadHistory()
+    local history = cdo.loadDebugHistory()
 
     local frame = 0
     local frameLimit = -2
@@ -108,6 +108,31 @@ return function()
 
         down = function()
             return true
+        end,
+
+        trace = function()
+            local trace = ""
+            local info
+            local i = 4
+            repeat
+                info = debug.getinfo(i)
+
+                if info then
+                    trace = trace ..
+                        (i - 4 == 0
+                            and colors.bright(colors.green("    ❱ " .. (i - 4) .. " │ "))
+                            or  colors.bright(colors.black("      " .. (i - 4) .. " │ ")))
+                        .. colors.green(info.short_src) .. ":"
+                        .. (info.currentline > 0 and colors.yellow(info.currentline) .. ":" or "")
+                        .. " in " .. colors.magenta(info.namewhat)
+                        .. colors.blue((info.name and " " .. info.name) or (info.what == "main" and "main chunk") or " ?")
+                        .. "\n"
+                end
+
+                i = i + 1
+            until not info
+
+            print("\n" .. trace)
         end,
 
         where = function()
@@ -165,8 +190,10 @@ return function()
             doREPL(commands, history)
         elseif event == "call" then
             frame = frame + 1
+            print("+", frame)
         elseif event == "return" then
             frame = frame - 1
+            print("-", frame)
         end
     end, "clr")
 end

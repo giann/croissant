@@ -222,6 +222,24 @@ local function loadHistory()
     return history
 end
 
+local function loadDebugHistory()
+    local history = {}
+
+    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_debugger_history", "r")
+
+    if historyFile then
+        for line in historyFile:lines() do
+            if line ~= "" then
+                table.insert(history, 1, ({line:gsub("\\n", "\n")})[1])
+            end
+        end
+
+        historyFile:close()
+    end
+
+    return history
+end
+
 local function appendToHistory(code)
     local historyFile = io.open(os.getenv "HOME" .. "/.croissant_history", "a+")
 
@@ -250,4 +268,5 @@ return {
     frameEnv             = frameEnv,
     loadHistory          = loadHistory,
     runChunk             = runChunk,
+    loadDebugHistory     = loadDebugHistory,
 }
