@@ -72,7 +72,9 @@ local default = {
         identifier = { "blue" },
     },
 
-    help = "croissant.help"
+    help = "croissant.help",
+
+    dumpLimit = 5,
 }
 
 -- Read from ~/.croissantrc

@@ -1,8 +1,9 @@
 local colors = require "term.colors"
+local conf   = require "croissant.conf"
 
 local dump
 dump = function(t, inc, seen)
-    if type(t) == "table" then
+    if type(t) == "table" and (inc or 0) < conf.dumpLimit then
         local s = ""
         inc = inc or 1
         seen = seen or {}
@@ -53,7 +54,7 @@ dump = function(t, inc, seen)
 end
 
 -- Returns true when more line are needed
-local function runChunk(code)
+local function runChunk(code, env)
     local fn, err = load("return " .. code, "croissant")
     if not fn then
         fn, err = load(code, "croissant")
