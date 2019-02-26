@@ -1,6 +1,7 @@
 local colors    = require "term.colors"
 local conf      = require "croissant.conf"
-local runChunk  = require "croissant.do".runChunk
+local cdo       = require "croissant.do"
+local runChunk  = cdo.runChunk
 
 local LuaPrompt = require "croissant.luaprompt"
 
@@ -17,25 +18,12 @@ local COPYRIGHT =
 return function()
     print(COPYRIGHT)
 
-    local history = {}
+    local history = cdo.loadHistory()
     local multiline = false
     local finished = false
 
     _G.quit = function()
         finished = true
-    end
-
-    -- Load history
-    local historyFile, _ = io.open(os.getenv "HOME" .. "/.croissant_history", "a+")
-
-    if historyFile then
-        for line in historyFile:lines() do
-            if line ~= "" then
-                table.insert(history, 1, ({line:gsub("\\n", "\n")})[1])
-            end
-        end
-    else
-        print(colors.yellow "Could not load history file at " .. os.getenv "HOME" .. "/.croissant_history")
     end
 
     while not finished do
@@ -50,7 +38,8 @@ return function()
 
         if code ~= "" and (not history[1] or history[1] ~= code) then
             table.insert(history, 1, code)
-            historyFile:write(code:gsub("\n", "\\n") .. "\n")
+
+            cdo.appendToHistory(code)
         end
 
         if runChunk((multiline or "") .. code) then
@@ -59,6 +48,4 @@ return function()
             multiline = nil
         end
     end
-
-    historyFile:close()
 end

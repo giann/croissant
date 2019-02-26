@@ -24,6 +24,8 @@ LuaPrompt = Class {
 
         self.multiline = options.multiline or ""
 
+        self.env = options.env or _G
+
         -- Leave function
         self.quit = options.quit
 
@@ -136,7 +138,7 @@ function LuaPrompt:command_complete()
     local highlightedPossibleValues = {}
     if currentToken.kind == "identifier" then
         -- Search in _G
-        for k, _ in pairs(_G) do
+        for k, _ in pairs(self.env) do
             if k:utf8sub(1, #currentToken.text) == currentToken.text then
                 table.insert(possibleValues, k)
                 table.insert(highlightedPossibleValues,
@@ -161,7 +163,7 @@ function LuaPrompt:command_complete()
 
         if currentTokenIndex > 1
             and self.tokens[currentTokenIndex - 1].kind == "identifier" then
-            local fn = load("return " .. self.tokens[currentTokenIndex - 1].text)
+            local fn = load("return " .. self.tokens[currentTokenIndex - 1].text, "lookup", "t", self.env)
             local parentTable = fn and fn()
 
             if type(parentTable) == "table" then

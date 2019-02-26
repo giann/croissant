@@ -53,11 +53,108 @@ dump = function(t, inc, seen)
     return colors.yellow .. tostring(t) .. colors.reset
 end
 
+local function frameEnv(withGlobals)
+    local level = 5
+    local func = debug.getinfo(level - 1).func
+    local env = {}
+    local rawenv = _G
+    local i
+
+    -- Retrieve the upvalues
+    i = 1
+    while true do
+        local ok, name, value = pcall(debug.getupvalue, func, i)
+
+        if not ok or not name then
+            break
+        end
+
+        env[name] = value
+        rawenv[name] = value
+        i = i + 1
+    end
+
+    -- Retrieve the locals (overwriting any upvalues)
+    i = 1
+    while true do
+        local ok, name, value = pcall(debug.getlocal, level, i)
+
+        if not ok or not name then
+            break
+        end
+
+        env[name] = value
+        rawenv[name] = value
+        i = i + 1
+    end
+
+    -- Retrieve the varargs
+    local varargs = {}
+    i = 1
+    while true do
+        local ok, name, value = pcall(debug.getlocal, level, -i)
+
+        if not ok or not name then
+            break
+        end
+
+        varargs[i] = value
+        i = i + 1
+    end
+    if i > 1 then
+        env["..."] = varargs
+        rawenv["..."] = varargs
+    end
+
+    if withGlobals then
+        return setmetatable(env._ENV, {__index = env or _G}), rawenv
+    else
+        return env
+    end
+end
+
+local function bindInFrame(frame, name, value, env)
+    -- Mutating a local?
+    do
+        local i = 1
+        repeat
+            local var = debug.getlocal(frame, i)
+
+            if name == var then
+                debug.setlocal(frame, i, value)
+
+                return
+            end
+            i = i + 1
+        until var == nil
+    end
+
+    -- Mutating an upvalue?
+    local func = debug.getinfo(frame).func
+    do
+        local i = 1
+        repeat
+            local var = debug.getupvalue(func, i)
+            if name == var then
+                debug.setupvalue(func, i, value)
+
+                return
+            end
+            i = i + 1
+        until var == nil
+    end
+
+    -- New global
+    rawset(_G, name, value)
+end
+
 -- Returns true when more line are needed
 local function runChunk(code, env)
-    local fn, err = load("return " .. code, "croissant")
+    env = env or _G
+
+    local fn, err = load("return " .. code, "croissant", "t", env)
     if not fn then
-        fn, err = load(code, "croissant")
+        fn, err = load(code, "croissant", "t", env)
     end
 
     if fn then
@@ -107,7 +204,50 @@ local function runChunk(code, env)
     return false
 end
 
+local function loadHistory()
+    local history = {}
+
+    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_history", "r")
+
+    if historyFile then
+        for line in historyFile:lines() do
+            if line ~= "" then
+                table.insert(history, 1, ({line:gsub("\\n", "\n")})[1])
+            end
+        end
+
+        historyFile:close()
+    end
+
+    return history
+end
+
+local function appendToHistory(code)
+    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_history", "a+")
+
+    if historyFile then
+        historyFile:write(code:gsub("\n", "\\n") .. "\n")
+
+        historyFile:close()
+    end
+end
+
+local function appendToDebugHistory(code)
+    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_debugger_history", "a+")
+
+    if historyFile then
+        historyFile:write(code:gsub("\n", "\\n") .. "\n")
+
+        historyFile:close()
+    end
+end
+
 return {
-    dump = dump,
-    runChunk = runChunk,
+    appendToDebugHistory = appendToDebugHistory,
+    appendToHistory      = appendToHistory,
+    bindInFrame          = bindInFrame,
+    dump                 = dump,
+    frameEnv             = frameEnv,
+    loadHistory          = loadHistory,
+    runChunk             = runChunk,
 }

@@ -1,27 +1,38 @@
-local colors    = require "term.colors"
-local conf      = require "croissant.conf"
-local LuaPrompt = require "croissant.luaprompt"
-local Lexer     = require "croissant.lexer"
-local runChunk  = require "croissant.do".runChunk
+local colors      = require "term.colors"
+local conf        = require "croissant.conf"
+local LuaPrompt   = require "croissant.luaprompt"
+local Lexer       = require "croissant.lexer"
+local cdo         = require "croissant.do"
+local runChunk    = cdo.runChunk
+local frameEnv    = cdo.frameEnv
+local bindInFrame = cdo.bindInFrame
 
-local function doREPL(frame, commands)
+local function doREPL(commands, history)
     local _, where = commands.where()
     print(colors.reset .. "\n" .. where .. "\n")
+
+    local fenv, rawenv = frameEnv(true)
+    local env = setmetatable({}, {
+        __index = fenv,
+        __newindex = function(env, name, value)
+            bindInFrame(8, name, value, env)
+        end
+    })
 
     local multiline
     while true do
         local info = debug.getinfo(4)
 
         local code = LuaPrompt {
+            env         = rawenv,
             prompt      = "["
                 .. colors.green(info.short_src)
-                .. ":"
-                .. (info.name and colors.blue(info.name) .. ":" or "")
-                .. colors.yellow(info.currentline)
+                .. (info.name and ":" .. colors.blue(info.name) or "")
+                .. (info.currentline > 0 and ":" .. colors.yellow(info.currentline) or "")
                 .. "] "
                 .. (not multiline and "→ " or ".... "),
             multiline   = multiline,
-            history     = {},
+            history     = history,
             tokenColors = conf.syntaxColors,
             help        = require(conf.help),
             quit        = function() end
@@ -38,8 +49,14 @@ local function doREPL(frame, commands)
             end
         end
 
+        if code ~= "" and (not history[1] or history[1] ~= code) then
+            table.insert(history, 1, code)
+
+            cdo.appendToDebugHistory(code)
+        end
+
         if not cmd then
-            if runChunk((multiline or "") .. code) then
+            if runChunk((multiline or "") .. code, env) then
                 multiline = (multiline or "") .. code .. "\n"
             else
                 multiline = nil
@@ -63,6 +80,8 @@ local function highlight(code)
 end
 
 return function()
+    local history = cdo.loadHistory()
+
     local frame = 0
     local frameLimit = -2
 
@@ -143,7 +162,7 @@ return function()
 
     debug.sethook(function(event, line)
         if event == "line" and frame <= frameLimit then
-            doREPL(frame, commands)
+            doREPL(commands, history)
         elseif event == "call" then
             frame = frame + 1
         elseif event == "return" then
