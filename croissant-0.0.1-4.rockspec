@@ -1,6 +1,6 @@
 
 package = "croissant"
-version = "0.0.1-4"
+version = "0.0.1-5"
 rockspec_format = "3.0"
 
 source = {
@@ -16,10 +16,12 @@ description = {
 build = {
     modules = {
         ["croissant"]           = "croissant/init.lua",
-        ["croissant.luaprompt"] = "croissant/luaprompt.lua",
-        ["croissant.lexer"]     = "croissant/lexer.lua",
-        ["croissant.help"]      = "croissant/help.lua",
         ["croissant.conf"]      = "croissant/conf.lua",
+        ["croissant.debugger"]  = "croissant/debugger.lua",
+        ["croissant.do"]        = "croissant/do.lua",
+        ["croissant.help"]      = "croissant/help.lua",
+        ["croissant.lexer"]     = "croissant/lexer.lua",
+        ["croissant.luaprompt"] = "croissant/luaprompt.lua",
     },
     type = "builtin",
     install = {
