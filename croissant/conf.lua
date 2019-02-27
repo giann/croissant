@@ -74,7 +74,7 @@ local default = {
 
     help = "croissant.help",
 
-    dumpLimit = 1,
+    dumpLimit = 5,
 }
 
 -- Read from ~/.croissantrc

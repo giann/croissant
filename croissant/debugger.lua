@@ -21,6 +21,19 @@ local function highlight(code)
     return highlighted
 end
 
+local breakpoints = {
+    -- ["./source.lua", { 14, 144, ... }]
+}
+
+local function breakpoint(source, line)
+    -- Args can come from user
+    line = tonumber(line)
+
+    breakpoints[source] = breakpoints[source] or {}
+
+    breakpoints[source][line] = true
+end
+
 return function()
     local history = cdo.loadDebugHistory()
 
@@ -30,6 +43,8 @@ return function()
 
     local commands
     commands = {
+        breakpoint = breakpoint,
+
         step = function()
             frameLimit = -1
             return true
@@ -135,6 +150,17 @@ return function()
         end,
 
         continue = function()
+            for _, v in pairs(breakpoints) do
+                -- luacheck: push ignore 512
+                for _, _ in pairs(v) do
+                    -- There's at least one breakpoint: don't clear hooks
+                    frameLimit = false
+                    return true
+                end
+                -- luacheck: pop
+            end
+
+            -- No breakpoints: clear hooks
             debug.sethook()
             return true
         end,
@@ -179,9 +205,14 @@ return function()
             -- Is it a command ?
             local cmd
             for command, fn in pairs(commands) do
-                if command == code then
+                local codeCommand, codeArgs = code:match "^(%g+)(.*)"
+                if command == codeCommand then
                     cmd = command
-                    if fn() then
+                    local args = {}
+                    for arg in codeArgs:gmatch "(%g+)" do
+                        table.insert(args, arg)
+                    end
+                    if fn(table.unpack(args)) then
                         return
                     end
                 end
@@ -204,8 +235,15 @@ return function()
     end
 
     debug.sethook(function(event, line)
-        if event == "line" and frame <= frameLimit then
+        if event == "line" and frameLimit and frame <= frameLimit then
             doREPL(currentFrame, commands, history)
+        elseif event == "line" then
+            local info = debug.getinfo(2)
+            local breaks = breakpoints[info.source:sub(2)]
+
+            if breaks and breaks[tonumber(line)] then
+                doREPL(0, commands, history)
+            end
         elseif event == "call" then
             frame = frame + 1
             currentFrame = 0
