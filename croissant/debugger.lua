@@ -21,32 +21,30 @@ local function highlight(code)
     return highlighted
 end
 
-local breakpoints = {
-    -- ["./source.lua", { 14, 144, ... }]
-}
 
-local function breakpoint(source, line)
-    -- Args can come from user
-    line = tonumber(line)
-
-    breakpoints[source] = breakpoints[source] or {}
-
-    breakpoints[source][line] = true
-end
-
-return function()
+return function(breakpoints, fromCli)
+    breakpoints = breakpoints or {}
     local history = cdo.loadDebugHistory()
 
     local frame = 0
-    local frameLimit = -2
+    -- When fromCli we don't want to break right away
+    local baseFrame = -2
+    local frameLimit = not fromCli and baseFrame or false
     local currentFrame = 0
 
     local commands
     commands = {
-        breakpoint = breakpoint,
+        breakpoint = function(source, line)
+            -- Args can come from user
+            line = tonumber(line)
+
+            breakpoints[source] = breakpoints[source] or {}
+
+            breakpoints[source][line] = true
+        end,
 
         step = function()
-            frameLimit = -1
+            frameLimit = baseFrame + 1
             return true
         end,
 
@@ -241,7 +239,14 @@ return function()
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
 
-            if breaks and breaks[tonumber(line)] then
+            -- -1 means `break at first line of code`
+            if breaks and (breaks[tonumber(line)] or breaks[-1]) then
+                breaks[-1] = nil
+
+                if not frameLimit then
+                    baseFrame = frame
+                    frameLimit = frame
+                end
                 doREPL(0, commands, history)
             end
         elseif event == "call" then

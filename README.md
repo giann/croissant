@@ -3,7 +3,7 @@
 </p>
 
 # Croissant
-🥐 A Lua REPL implemented in Lua
+🥐 A Lua REPL and debugger implemented in Lua
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/master/assets/croissant.gif" alt="croissant">
@@ -40,6 +40,7 @@ croissant
 - Basic auto-completion
 - Contextual help (`C-h` on an identifier)
 - Persistent history
+- Debugger
 
 ## Todo
 

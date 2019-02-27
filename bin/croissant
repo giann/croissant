@@ -1,3 +1,87 @@
 #!/usr/bin/env lua
 
-require "croissant"()
+local argparse = require "argparse"
+local colors   = require "term.colors"
+local dump     = require "croissant.do".dump
+
+local parseArgument = function()
+    local parser = argparse()
+        :name "croissant"
+        :description "A Lua REPL and debugger"
+
+    parser:argument "input"
+        :description "A lua file to run or debug"
+        :args "?"
+
+    parser:option "-b --break"
+        :description "List of breakpoints of the form `file:line`"
+        :args "*"
+
+    return parser:parse()
+end
+
+local route = function(arguments)
+    -- If breakpoint defined, enter debugger mode
+    local breakpointsStr = arguments["break"]
+
+    if breakpointsStr then
+        local breakpoints = {}
+        local breaks = false
+
+        for _, breakpoint in ipairs(breakpointsStr) do
+            local source, line = breakpoint:match "^([^:]*):(%d+)$"
+
+            if source then
+                breakpoints[source] = breakpoints[source] or {}
+                breakpoints[source][tonumber(line)] = true
+                breaks = true
+            end
+        end
+
+        -- Nothing specify break at first line of code
+        if not breaks and arguments.input then
+            breakpoints[arguments.input] = {}
+            breakpoints[arguments.input][-1] = true
+        elseif not breaks then
+            print(colors.red("Illegal use of --break: missing input file"))
+            return
+        end
+
+        require "croissant.debugger"(breakpoints, true)
+    end
+
+    if arguments.input then
+        -- Run file
+        local fn, err = loadfile(arguments.input)
+
+        if not fn then
+            print(colors.red(err))
+            return
+        end
+
+        local result = table.pack(xpcall(fn, debug.traceback))
+
+        if not result[1] then
+            print(colors.red(result[2]))
+            return
+        end
+
+        local dumps = {}
+        for i = 2, result.n do
+            local r = result[i]
+            table.insert(dumps, dump(r))
+        end
+
+        if #dumps > 0 then
+            print(
+                colors.bright(colors.blue("\nReturned values:\n")) ..
+                table.concat(dumps, "\t")
+            )
+        end
+    else
+        -- Regular REPL
+        require "croissant"()
+    end
+end
+
+route(parseArgument())

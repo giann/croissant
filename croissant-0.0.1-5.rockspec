@@ -36,4 +36,5 @@ dependencies = {
     "sirocco >= 0.0.1-4",
     "hump >= 0.4-2",
     "lpeg >= 1.0.1-1",
+    "argparse >= 0.6.0-1"
 }

@@ -191,18 +191,14 @@ local function runChunk(code, env)
                 end
             end
         else
-            print(
-                colors.red
-                .. result[2]
-                .. colors.reset
-            )
+            print(colors.red(result[2]))
         end
     else
         -- Syntax error near <eof>
         if err:match("<eof>") then
             return true
         else
-            print(colors.red .. err .. colors.reset)
+            print(colors.red(err))
         end
     end
 

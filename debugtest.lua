@@ -13,8 +13,6 @@ local function sayHello(name)
 
     local sayHelloLocal = "i'm local to sayHello"
 
-    require "croissant.debugger"()
-
     print(yo, anUpvalue, sayHelloLocal, newGlobal)
 
     yo(name)
@@ -30,5 +28,9 @@ local function sayIt()
 	return true
 end
 
-sayIt()
+local it = sayIt()
+
+print(debug.getinfo(1).source)
+
+return it, "yeah !", { 1, 2, 3 }
 
