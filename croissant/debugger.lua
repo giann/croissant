@@ -59,12 +59,22 @@ return function(breakpoints, fromCli)
         end,
 
         up = function()
-            currentFrame = currentFrame + 1
+            if currentFrame + 1 > baseFrame - 1 then
+                print(colors.yellow "No further context")
+                return false
+            end
+
+            currentFrame = math.min(currentFrame + 1, baseFrame - 1)
 
             return false
         end,
 
         down = function()
+            if currentFrame - 1 < 0 then
+                print(colors.yellow "No further context")
+                return false
+            end
+
             currentFrame = math.max(0, currentFrame - 1)
 
             return false
@@ -90,7 +100,7 @@ return function(breakpoints, fromCli)
                 end
 
                 i = i + 1
-            until not info
+            until not info or i - 4 > baseFrame
 
             print("\n" .. trace)
 
@@ -233,9 +243,9 @@ return function(breakpoints, fromCli)
     end
 
     debug.sethook(function(event, line)
-        if event == "line" and frameLimit and frame <= frameLimit then
+        if event == "line" and frameLimit and frame <= frameLimit and frame > baseFrame then
             doREPL(currentFrame, commands, history)
-        elseif event == "line" then
+        elseif event == "line" and (not baseFrame or frame > baseFrame) then
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
 

@@ -3,7 +3,7 @@ local function yo(name)
 
     print(name)
 
-	print "third level"
+    print "third level"
 end
 
 local anUpvalue = "i'm a wild upvalue"
@@ -19,13 +19,13 @@ local function sayHello(name)
 end
 
 local function sayIt()
-	print "sayIt"
+    print "sayIt"
 
     local sayItLocal = "i'm local to sayIt"
 
-	sayHello("joe")
+    sayHello("joe")
 
-	return true
+    return true
 end
 
 local it = sayIt()
