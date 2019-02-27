@@ -59,12 +59,12 @@ return function(breakpoints, fromCli)
         end,
 
         up = function()
-            if currentFrame + 1 > baseFrame - 1 then
+            if currentFrame + 1 > frame then
                 print(colors.yellow "No further context")
                 return false
             end
 
-            currentFrame = math.min(currentFrame + 1, baseFrame - 1)
+            currentFrame = math.min(currentFrame + 1, frame)
 
             return false
         end,
@@ -100,7 +100,7 @@ return function(breakpoints, fromCli)
                 end
 
                 i = i + 1
-            until not info or i - 4 > baseFrame
+            until not info or i - 4 > frame
 
             print("\n" .. trace)
 
@@ -210,6 +210,12 @@ return function(breakpoints, fromCli)
                 quit        = function() end
             }:ask()
 
+            if code ~= "" and (not history[1] or history[1] ~= code) then
+                table.insert(history, 1, code)
+
+                cdo.appendToDebugHistory(code)
+            end
+
             -- Is it a command ?
             local cmd
             for command, fn in pairs(commands) do
@@ -226,12 +232,6 @@ return function(breakpoints, fromCli)
                 end
             end
 
-            if code ~= "" and (not history[1] or history[1] ~= code) then
-                table.insert(history, 1, code)
-
-                cdo.appendToDebugHistory(code)
-            end
-
             if not cmd then
                 if runChunk((multiline or "") .. code, env) then
                     multiline = (multiline or "") .. code .. "\n"
@@ -243,9 +243,9 @@ return function(breakpoints, fromCli)
     end
 
     debug.sethook(function(event, line)
-        if event == "line" and frameLimit and frame <= frameLimit and frame > baseFrame then
+        if event == "line" and frameLimit and frame <= frameLimit then --and frame > baseFrame then
             doREPL(currentFrame, commands, history)
-        elseif event == "line" and (not baseFrame or frame > baseFrame) then
+        elseif event == "line" then--and (not baseFrame or frame > baseFrame) then
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
 

@@ -13,9 +13,9 @@ local function sayHello(name)
 
     local sayHelloLocal = "i'm local to sayHello"
 
-    print(yo, anUpvalue, sayHelloLocal, newGlobal)
-
     yo(name)
+
+    print(yo, anUpvalue, sayHelloLocal, newGlobal)
 end
 
 local function sayIt()
