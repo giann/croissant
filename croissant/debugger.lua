@@ -28,7 +28,6 @@ local commandsMatchingOrder = {
 }
 
 local repeatableCommands = {
-    "breakpoint",
     "continue",
     "down",
     "next",

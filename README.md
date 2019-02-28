@@ -43,24 +43,48 @@ luarocks install croissant
 
 ```bash
 # Make sure lua/luarocks binaries are in your $PATH (~/.luarocks/bin)
-croissant [-h] [<input>] [-b [<break>] ...]
+croissant [-h] [<input>] [-d [<debugger>] ...]
 ```
 
-- `input`: A lua file to run or debug. If not provided, croissant will run the REPL.
-- `--break -b [file.lua:line] ...`: Will break at given lines. If non provided, will break at first line of code.
-- `--help -h`: Show help message.
+- `input`: a lua file to run or debug. If not provided, croissant will run the REPL.
+- `--debugger -d --break -b [file.lua:line] ...`: runs croissant in debugger mode and optionally sets breakpoints
+- `--help -h`: shows help message
 
 ## Debugger
 
-Either use croissant to run your file and specify some breakpoints with `--break` or add this where you want to break in your code:
+### Using the cli
+
+```bash
+croissant filetodebug.lua -d
+```
+
+This will start croissant in debugger mode. You can then add some breakpoints with the `breakpoint` command and start your script with the `run` command.
+
+### In your code
+
+Alternatively, you can require the debugger in your script where you want to break:
 
 ```bash
 require "croissant.debugger"()
 ```
 
-Croissant looks at the first word of your entry and runs any command it matches. Otherwise runs entry as Lua code in the current frame context.
-If entry empty, executes previous commands.
+### Commands
 
+Croissant looks at the first word of your entry and runs any command it matches. It'll otherwise runs the entry as Lua code in the current frame context. If empty, croissant executes the previous repeatable command.
+
+- **`run`**: starts your script
+- **`breakpoint <file> <line>`**: add a new breakpoint in `file` at `line`
+- **`delete <#id>`**: delete breakpoint `#id`
+- **`enable <#id>`**: enable breakpoint `#id`
+- **`disable <#id>`**: disable breakpoint `#id`
+- **`info <what>`**:
+    + `breakpoints`: list breakpoints
+- **`step`** (repeatable): step in the code
+- **`next`** (repeatable): step in the code but doesn't enter deeper context
+- **`out`** (repeatable): will break after leaving the current frame
+- **`up`** (repeatable): go up one frame
+- **`down`** (repeatable): go down one frame
+- **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
 - **`where`**: shows code around the current line. Is run for you each time you step in the code or change frame context.
 
 <p align="center">
@@ -73,20 +97,7 @@ If entry empty, executes previous commands.
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-trace.png" alt="where trace">
 </p>
 
-- **`breakpoint <file> <line>`**: add a new breakpoint in `file` at `line`
-- **`delete <#id>`**: delete breakpoint `#id`
-- **`enable <#id>`**: enable breakpoint `#id`
-- **`disable <#id>`**: disable breakpoint `#id`
-- **`info <what>`**:
-    + `breakpoints`: list breakpoints
-- **`step`**: step in the code
-- **`next`**: step in the code but doesn't enter deeper context
-- **`out`**: will break after leaving the current frame
-- **`up`**: go up one frame
-- **`down`**: go down one frame
-- **`continue`**: continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
-
-You can truncate the command any way you want. If the truncated command is ambiguous, croissant will choose from the matching commands in this order:
+You can truncate commands any way you want. If the truncated command is ambiguous, croissant will choose matching commands in this order:
 - `breakpoint`
 - `continue`
 - `down`
@@ -97,6 +108,7 @@ You can truncate the command any way you want. If the truncated command is ambig
 - `next`
 - `out`
 - `step`
+- `run`
 - `trace`
 - `up`
 - `where`
