@@ -260,6 +260,8 @@ return function(script, arguments, breakpoints, fromCli)
 
         clear = function()
             breakpoints = {}
+
+            print(colors.yellow "All breakpoints removed")
         end,
 
         delete = function(breakpoint)
@@ -358,6 +360,26 @@ return function(script, arguments, breakpoints, fromCli)
                 else
                     print(colors.yellow "No breakpoint defined")
                 end
+            elseif what == "locals" then
+                local locals = frameEnv(false, currentFrame + 1)
+
+                local keys = {}
+                for k, _ in pairs(locals) do
+                    table.insert(keys, k)
+                end
+                table.sort(keys)
+
+                local s = ""
+                for _, k in ipairs(keys) do
+                    if k ~= "_ENV" and k ~= "(*temporary)" and  k ~= "_G" then
+                        s = s
+                            .. colors.blue(k)
+                            .. " = "
+                            .. cdo.dump(locals[k], 1)
+                            .. "\n"
+                    end
+                end
+                print("\n" .. s)
             end
         end,
 

@@ -82,6 +82,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`clear`**: delete breakpoints
 - **`info <what>`**:
     + `breakpoints`: list breakpoints
+    + `locals`: list locals of the current frame
 - **`step`** (repeatable): step in the code
 - **`next`** (repeatable): step in the code but doesn't enter deeper context
 - **`out`** (repeatable): will break after leaving the current frame
