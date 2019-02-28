@@ -21,6 +21,22 @@ local function highlight(code)
     return highlighted
 end
 
+-- When truncated command name are used, will match the first one in this table
+local commandsMatchingOrder = {
+    "breakpoint",
+    "continue",
+    "down",
+    "delete",
+    "disable",
+    "enable",
+    "info",
+    "next",
+    "out",
+    "step",
+    "trace",
+    "up",
+    "where",
+}
 
 return function(breakpoints, fromCli)
     breakpoints = breakpoints or {}
@@ -342,18 +358,21 @@ return function(breakpoints, fromCli)
 
             -- Is it a command ?
             local cmd
-            for command, fn in pairs(commands) do
+            for _, command in ipairs(commandsMatchingOrder) do
                 local codeCommand, codeArgs = code:match "^(%g+)(.*)"
-                if command == codeCommand then
+                if command == codeCommand
+                    or command:sub(1, #codeCommand) == codeCommand then
                     lastCommand = code
                     cmd = command
                     local args = {}
                     for arg in codeArgs:gmatch "(%g+)" do
                         table.insert(args, arg)
                     end
-                    if fn(table.unpack(args)) then
+                    if commands[command](table.unpack(args)) then
                         return
                     end
+
+                    break
                 end
             end
 

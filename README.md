@@ -61,27 +61,42 @@ require "croissant.debugger"()
 Croissant looks at the first word of your entry and runs any command it matches. Otherwise runs entry as Lua code in the current frame context.
 If entry empty, executes previous commands.
 
-- `where`: shows code around the current line. Is run for you each time you step in the code or change frame context.
+- **`where`**: shows code around the current line. Is run for you each time you step in the code or change frame context.
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-where.png" alt="where command">
 </p>
 
-- `trace`: shows current stack trace and highlight current frame.
+- **`trace`**: shows current stack trace and highlight current frame.
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-trace.png" alt="where trace">
 </p>
 
-- `breakpoint <file> <line>`: add a new breakpoint in `file` at `line`
-- `delete <#id>`: delete breakpoint `#id`
-- `enable <#id>`: enable breakpoint `#id`
-- `disable <#id>`: disable breakpoint `#id`
-- `info <what>`:
+- **`breakpoint <file> <line>`**: add a new breakpoint in `file` at `line`
+- **`delete <#id>`**: delete breakpoint `#id`
+- **`enable <#id>`**: enable breakpoint `#id`
+- **`disable <#id>`**: disable breakpoint `#id`
+- **`info <what>`**:
     + `breakpoints`: list breakpoints
-- `step`: step in the code
-- `next`: step in the code but doesn't enter deeper context
-- `out`: will break after leaving the current frame
-- `up`: go up one frame
-- `down`: go down one frame
-- `continue`: continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
+- **`step`**: step in the code
+- **`next`**: step in the code but doesn't enter deeper context
+- **`out`**: will break after leaving the current frame
+- **`up`**: go up one frame
+- **`down`**: go down one frame
+- **`continue`**: continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
+
+You can truncate the command any way you want. If the truncated command is ambiguous, croissant will choose from the matching commands in this order:
+- `breakpoint`
+- `continue`
+- `down`
+- `delete`
+- `disable`
+- `enable`
+- `info`
+- `next`
+- `out`
+- `step`
+- `trace`
+- `up`
+- `where`
