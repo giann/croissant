@@ -9,8 +9,30 @@ local bindInFrame = cdo.bindInFrame
 local banner      = cdo.banner
 local runFile     = cdo.runFile
 
--- When truncated command name are used, will match the first one in this table
-local commandsMatchingOrder = {
+local repeatableCommands = {
+    "continue",
+    "down",
+    "next",
+    "out",
+    "step",
+    "up",
+}
+
+-- Warning: Order matters. When truncated command name are used, will match the first one in these tables.
+
+-- Commands allowed when detached
+local detachedCommands = {
+    "breakpoint",
+    "clear",
+    "delete",
+    "disable",
+    "enable",
+    "info",
+    "run",
+}
+
+-- Commands allowed when attached
+local attachedCommands = {
     "breakpoint",
     "continue",
     "clear",
@@ -21,20 +43,10 @@ local commandsMatchingOrder = {
     "info",
     "next",
     "out",
-    "run",
     "step",
     "trace",
     "up",
     "where",
-}
-
-local repeatableCommands = {
-    "continue",
-    "down",
-    "next",
-    "out",
-    "step",
-    "up",
 }
 
 local function highlight(code)
@@ -57,8 +69,7 @@ return function(script, breakpoints, fromCli)
 
     local frame = 0
     -- When fromCli we don't want to break right away
-    local baseFrame = -2
-    local frameLimit = not fromCli and baseFrame or false
+    local frameLimit = not fromCli and -2 or false
     local currentFrame = 0
 
     local lastCommand, commands
@@ -138,7 +149,8 @@ return function(script, breakpoints, fromCli)
             if code and code ~= "" then
                 -- Is it a command ?
                 local cmd
-                for _, command in ipairs(commandsMatchingOrder) do
+                local allowed = detached and detachedCommands or attachedCommands
+                for _, command in ipairs(allowed) do
                     local codeCommand, codeArgs = code:match "^(%g+)(.*)"
                     if command == codeCommand
                         or command:sub(1, #codeCommand) == codeCommand then
@@ -181,6 +193,10 @@ return function(script, breakpoints, fromCli)
     end
 
     local function hook(event, line)
+        -- if event == "line" then
+        --     print(line, debug.getinfo(2).source, frame, frameLimit)
+        -- end
+
         if event == "line" and frameLimit and frame <= frameLimit then
             doREPL()
         elseif event == "line" then
@@ -192,7 +208,7 @@ return function(script, breakpoints, fromCli)
                 breaks[-1] = nil
 
                 if not frameLimit then
-                    baseFrame = frame
+                  
                     frameLimit = frame
                 end
                 doREPL()
@@ -329,7 +345,7 @@ return function(script, breakpoints, fromCli)
         end,
 
         step = function()
-            frameLimit = baseFrame + 1
+            frameLimit = frame + 1
             return true
         end,
 
