@@ -43,6 +43,91 @@ return function(breakpoints, fromCli)
 
                 breakpoints[source][line] = true
             else
+                print(colors.yellow "Where required")
+            end
+        end,
+
+        clear = function()
+            breakpoints = {}
+        end,
+
+        delete = function(breakpoint)
+            if breakpoint then
+                breakpoint = tonumber(breakpoint)
+                local count = 1
+                for _, lines in pairs(breakpoints) do
+                    for l, _ in pairs(lines) do
+                        if count == breakpoint then
+                            lines[l] = nil
+
+                            print(colors.yellow("Breakpoint #" .. breakpoint .. " deleted"))
+                            return
+                        end
+
+                        count = count + 1
+                    end
+                end
+
+                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
+            else
+                print(colors.yellow "No breakpoint id provided")
+            end
+        end,
+
+        enable = function(breakpoint)
+            if breakpoint then
+                breakpoint = tonumber(breakpoint)
+                local count = 1
+                for _, lines in pairs(breakpoints) do
+                    for l, _ in pairs(lines) do
+                        if count == breakpoint then
+                            lines[l] = true
+
+                            print(colors.yellow("Breakpoint #" .. breakpoint .. " enabled"))
+                            return
+                        end
+
+                        count = count + 1
+                    end
+                end
+
+                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
+            else
+                print(colors.yellow "No breakpoint id provided")
+            end
+        end,
+
+        disable = function(breakpoint)
+            if breakpoint then
+                breakpoint = tonumber(breakpoint)
+                local count = 1
+                for _, lines in pairs(breakpoints) do
+                    for l, _ in pairs(lines) do
+                        if count == breakpoint then
+                            lines[l] = false
+
+                            print(colors.yellow("Breakpoint #" .. breakpoint .. " disabled"))
+                            return
+                        end
+
+                        count = count + 1
+                    end
+                end
+
+                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
+            else
+                print(colors.yellow "No breakpoint id provided")
+            end
+        end,
+
+        info = function(what)
+            if not what then
+                print(colors.yellow "Info on what ?")
+
+                return
+            end
+
+            if what == "breakpoints" then
                 local count = 1
                 local breakStr = ""
                 for s, lines in pairs(breakpoints) do
@@ -63,67 +148,6 @@ return function(breakpoints, fromCli)
                     print(colors.yellow "No breakpoint defined")
                 end
             end
-        end,
-
-        clear = function()
-            breakpoints = {}
-        end,
-
-        delete = function(breakpoint)
-            breakpoint = tonumber(breakpoint)
-            local count = 1
-            for _, lines in pairs(breakpoints) do
-                for l, _ in pairs(lines) do
-                    if count == breakpoint then
-                        lines[l] = nil
-
-                        print(colors.yellow("Breakpoint #" .. breakpoint .. " deleted"))
-                        return
-                    end
-
-                    count = count + 1
-                end
-            end
-
-            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-        end,
-
-        enable = function(breakpoint)
-            breakpoint = tonumber(breakpoint)
-            local count = 1
-            for _, lines in pairs(breakpoints) do
-                for l, _ in pairs(lines) do
-                    if count == breakpoint then
-                        lines[l] = true
-
-                        print(colors.yellow("Breakpoint #" .. breakpoint .. " enabled"))
-                        return
-                    end
-
-                    count = count + 1
-                end
-            end
-
-            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-        end,
-
-        disable = function(breakpoint)
-            breakpoint = tonumber(breakpoint)
-            local count = 1
-            for _, lines in pairs(breakpoints) do
-                for l, _ in pairs(lines) do
-                    if count == breakpoint then
-                        lines[l] = false
-
-                        print(colors.yellow("Breakpoint #" .. breakpoint .. " disabled"))
-                        return
-                    end
-
-                    count = count + 1
-                end
-            end
-
-            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
         end,
 
         step = function()
