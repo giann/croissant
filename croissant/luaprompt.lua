@@ -14,11 +14,19 @@ LuaPrompt = Class {
     init = function(self, options)
         options = options or {}
 
+        -- If false not parsing while typing
+        self.parsing = true
+        if options.parsing ~= nil then
+            self.parsing = options.parsing
+        end
+
         Prompt.init(self, {
             prompt = options.prompt or "→ ",
-            validator = function(code)
-                return LuaPrompt.validateLua(self.multiline .. code)
-            end,
+            validator = self.parsing
+                and function(code)
+                    return LuaPrompt.validateLua(self.multiline .. code)
+                end
+                or function() return true end,
             required = false
         })
 

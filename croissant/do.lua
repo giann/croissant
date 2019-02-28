@@ -205,6 +205,36 @@ local function runChunk(code, env)
     return false
 end
 
+local function runFile(script)
+    -- Run file
+    local fn, err = loadfile(script)
+
+    if not fn then
+        print(colors.red(err))
+        return
+    end
+
+    local result = table.pack(xpcall(fn, debug.traceback))
+
+    if not result[1] then
+        print(colors.red(result[2]))
+        return
+    end
+
+    local dumps = {}
+    for i = 2, result.n do
+        local r = result[i]
+        table.insert(dumps, dump(r))
+    end
+
+    if #dumps > 0 then
+        print(
+            colors.bright(colors.blue("\nReturned values:\n")) ..
+            table.concat(dumps, "\t")
+        )
+    end
+end
+
 local function loadHistory()
     local history = {}
 
@@ -261,7 +291,21 @@ local function appendToDebugHistory(code)
     end
 end
 
+local function banner()
+    if tonumber(_VERSION:match("Lua (%d+)")) < 5
+        or tonumber(_VERSION:match("Lua %d+%.(%d+)")) < 3 then
+        print(colors.red "Croissant requires at least Lua 5.3")
+        os.exit(1)
+    end
+
+    print(
+        "🥐  Croissant 0.0.1 (C) 2019 Benoit Giannangeli\n"
+        .. _VERSION ..  " Copyright (C) 1994-2018 Lua.org, PUC-Rio"
+    )
+end
+
 return {
+    banner               = banner,
     appendToDebugHistory = appendToDebugHistory,
     appendToHistory      = appendToHistory,
     bindInFrame          = bindInFrame,
@@ -270,20 +314,5 @@ return {
     loadHistory          = loadHistory,
     runChunk             = runChunk,
     loadDebugHistory     = loadDebugHistory,
-    -- When truncated command name are used, will match the first one in this table
-    commandsMatchingOrder = {
-        "breakpoint",
-        "continue",
-        "down",
-        "delete",
-        "disable",
-        "enable",
-        "info",
-        "next",
-        "out",
-        "step",
-        "trace",
-        "up",
-        "where",
-    }
+    runFile              = runFile,
 }

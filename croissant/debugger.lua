@@ -1,12 +1,41 @@
-local colors                = require "term.colors"
-local conf                  = require "croissant.conf"
-local LuaPrompt             = require "croissant.luaprompt"
-local Lexer                 = require "croissant.lexer"
-local cdo                   = require "croissant.do"
-local runChunk              = cdo.runChunk
-local frameEnv              = cdo.frameEnv
-local bindInFrame           = cdo.bindInFrame
-local commandsMatchingOrder = cdo.commandsMatchingOrder
+local colors      = require "term.colors"
+local conf        = require "croissant.conf"
+local LuaPrompt   = require "croissant.luaprompt"
+local Lexer       = require "croissant.lexer"
+local cdo         = require "croissant.do"
+local runChunk    = cdo.runChunk
+local frameEnv    = cdo.frameEnv
+local bindInFrame = cdo.bindInFrame
+local banner      = cdo.banner
+local runFile     = cdo.runFile
+
+-- When truncated command name are used, will match the first one in this table
+local commandsMatchingOrder = {
+    "breakpoint",
+    "continue",
+    "down",
+    "delete",
+    "disable",
+    "enable",
+    "info",
+    "next",
+    "out",
+    "run",
+    "step",
+    "trace",
+    "up",
+    "where",
+}
+
+local repeatableCommands = {
+    "breakpoint",
+    "continue",
+    "down",
+    "next",
+    "out",
+    "step",
+    "up",
+}
 
 local function highlight(code)
     local lexer = Lexer()
@@ -22,7 +51,7 @@ local function highlight(code)
     return highlighted
 end
 
-return function(breakpoints, fromCli)
+return function(script, breakpoints, fromCli)
     breakpoints = breakpoints or {}
     local history = cdo.loadDebugHistory()
 
@@ -32,19 +61,150 @@ return function(breakpoints, fromCli)
     local frameLimit = not fromCli and baseFrame or false
     local currentFrame = 0
 
-    local lastCommand
+    local lastCommand, commands
 
-    local commands
+    local function breakpointCount()
+        local count = 0
+        for _, lines in pairs(breakpoints) do
+            for _, _ in pairs(lines) do
+                count = count + 1
+            end
+        end
+
+        return count
+    end
+
+    local function doREPL(detached)
+        local rframe, fenv, env, rawenv, multiline
+        while true do
+            if rframe ~= currentFrame and not detached then
+                rframe = currentFrame
+
+                commands.where()
+
+                fenv, rawenv = frameEnv(true, currentFrame)
+                env = setmetatable({}, {
+                    __index = fenv,
+                    __newindex = function(env, name, value)
+                        bindInFrame(8 + currentFrame, name, value, env)
+                    end
+                })
+            elseif detached then
+                env = _G
+                rawenv = _G
+            end
+
+            local prompt = not multiline and conf.prompt or conf.continuationPrompt
+
+            if not detached then
+                local info = debug.getinfo(3 + (currentFrame or 0))
+
+                prompt = colors.reset
+                    .. "[" .. currentFrame .. "]"
+                    .. "["
+                    .. colors.green(info.short_src)
+                    .. (info.name and ":" .. colors.blue(info.name) or "")
+                    .. (info.currentline > 0 and ":" .. colors.yellow(info.currentline) or "")
+                    .. "] "
+                    .. (not multiline and conf.prompt or conf.continuationPrompt)
+            end
+
+            local code = LuaPrompt {
+                parsing     = not detached,
+                env         = rawenv,
+                prompt      = prompt,
+                multiline   = multiline,
+                history     = history,
+                tokenColors = conf.syntaxColors,
+                help        = require(conf.help),
+                quit        = function() end
+            }:ask()
+
+            if code ~= "" and (not history[1] or history[1] ~= code) then
+                table.insert(history, 1, code)
+
+                cdo.appendToDebugHistory(code)
+            end
+
+            -- If empty replay previous command
+            if code == "" then
+                code = lastCommand
+            end
+
+            -- Is it a command ?
+            local cmd
+            for _, command in ipairs(commandsMatchingOrder) do
+                local codeCommand, codeArgs = code:match "^(%g+)(.*)"
+                if command == codeCommand
+                    or command:sub(1, #codeCommand) == codeCommand then
+
+                    local repeatable = false
+                    for _, c in ipairs(repeatableCommands) do
+                        if c == command then
+                            repeatable = true
+                            break
+                        end
+                    end
+
+                    lastCommand = repeatable and code or lastCommand
+
+                    cmd = command
+                    local args = {}
+                    for arg in codeArgs:gmatch "(%g+)" do
+                        table.insert(args, arg)
+                    end
+                    if commands[command](table.unpack(args)) then
+                        return
+                    end
+
+                    break
+                end
+            end
+
+            -- Don't run any chunk if detached
+            if not cmd and not detached then
+                if runChunk((multiline or "") .. code, env) then
+                    multiline = (multiline or "") .. code .. "\n"
+                else
+                    multiline = nil
+                end
+            elseif not cmd then
+                print(colors.red "Command not recognized")
+            end
+        end
+    end
+
+    local function hook(event, line)
+        if event == "line" and frameLimit and frame <= frameLimit then
+            doREPL()
+        elseif event == "line" then
+            local info = debug.getinfo(2)
+            local breaks = breakpoints[info.source:sub(2)]
+
+            -- -1 means `break at first line of code`
+            if breaks and (breaks[tonumber(line)] or breaks[-1]) then
+                breaks[-1] = nil
+
+                if not frameLimit then
+                    baseFrame = frame
+                    frameLimit = frame
+                end
+                doREPL()
+            end
+        elseif event == "call" then
+            frame = frame + 1
+            currentFrame = 0
+        elseif event == "return" then
+            frame = frame - 1
+            currentFrame = 0
+        end
+    end
+
     commands = {
         breakpoint = function(source, line)
             if source and line then
                 -- Get breakpoints count
-                local count = 1
-                for _, lines in pairs(breakpoints) do
-                    for _, _ in pairs(lines) do
-                        count = count + 1
-                    end
-                end
+                local count = breakpointCount()
 
                 -- Args can come from user
                 line = tonumber(line)
@@ -53,7 +213,7 @@ return function(breakpoints, fromCli)
 
                 breakpoints[source][line] = true
 
-                print(colors.green("Breakpoint #" .. count .. " added"))
+                print(colors.green("Breakpoint #" .. count + 1 .. " added"))
             else
                 print(colors.yellow "Where required")
             end
@@ -291,108 +451,23 @@ return function(breakpoints, fromCli)
             debug.sethook()
             return true
         end,
+
+        run = function(...)
+            debug.sethook(hook, "clr")
+
+            if script then
+                runFile(script)
+            end
+        end,
     }
 
-    local function doREPL()
-        local rframe, fenv, env, rawenv, multiline
-        while true do
-            if rframe ~= currentFrame then
-                rframe = currentFrame
+    banner()
 
-                commands.where()
-
-                fenv, rawenv = frameEnv(true, currentFrame)
-                env = setmetatable({}, {
-                    __index = fenv,
-                    __newindex = function(env, name, value)
-                        bindInFrame(8 + currentFrame, name, value, env)
-                    end
-                })
-            end
-
-            local info = debug.getinfo(3 + (currentFrame or 0))
-
-            local code = LuaPrompt {
-                env         = rawenv,
-                prompt      = colors.reset
-                    .. "[" .. currentFrame .. "]"
-                    .. "["
-                    .. colors.green(info.short_src)
-                    .. (info.name and ":" .. colors.blue(info.name) or "")
-                    .. (info.currentline > 0 and ":" .. colors.yellow(info.currentline) or "")
-                    .. "] "
-                    .. (not multiline and "→ " or ".... "),
-                multiline   = multiline,
-                history     = history,
-                tokenColors = conf.syntaxColors,
-                help        = require(conf.help),
-                quit        = function() end
-            }:ask()
-
-            if code ~= "" and (not history[1] or history[1] ~= code) then
-                table.insert(history, 1, code)
-
-                cdo.appendToDebugHistory(code)
-            end
-
-            -- If empty replay previous command
-            if code == "" then
-                code = lastCommand
-            end
-
-            -- Is it a command ?
-            local cmd
-            for _, command in ipairs(commandsMatchingOrder) do
-                local codeCommand, codeArgs = code:match "^(%g+)(.*)"
-                if command == codeCommand
-                    or command:sub(1, #codeCommand) == codeCommand then
-                    lastCommand = code
-                    cmd = command
-                    local args = {}
-                    for arg in codeArgs:gmatch "(%g+)" do
-                        table.insert(args, arg)
-                    end
-                    if commands[command](table.unpack(args)) then
-                        return
-                    end
-
-                    break
-                end
-            end
-
-            if not cmd then
-                if runChunk((multiline or "") .. code, env) then
-                    multiline = (multiline or "") .. code .. "\n"
-                else
-                    multiline = nil
-                end
-            end
-        end
+    if fromCli then
+        doREPL(true)
+    else
+        -- We're required inside a script, debug.sethook must be the last instruction otherwise
+        -- we'll break at the last debugger instruction
+        debug.sethook(hook, "clr")
     end
-
-    debug.sethook(function(event, line)
-        if event == "line" and frameLimit and frame <= frameLimit then --and frame > baseFrame then
-            doREPL(currentFrame, commands, history)
-        elseif event == "line" then--and (not baseFrame or frame > baseFrame) then
-            local info = debug.getinfo(2)
-            local breaks = breakpoints[info.source:sub(2)]
-
-            -- -1 means `break at first line of code`
-            if breaks and (breaks[tonumber(line)] or breaks[-1]) then
-                breaks[-1] = nil
-
-                if not frameLimit then
-                    baseFrame = frame
-                    frameLimit = frame
-                end
-                doREPL(0, commands, history)
-            end
-        elseif event == "call" then
-            frame = frame + 1
-            currentFrame = 0
-        elseif event == "return" then
-            frame = frame - 1
-            currentFrame = 0
-        end
-    end, "clr")
 end
