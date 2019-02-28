@@ -72,10 +72,15 @@ Croissant looks at the first word of what you entered at the prompt and run any 
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-trace.png" alt="where trace">
 </p>
 
-- `breakpoint file line`: add a new breakpoint in `file` at `line`.
-- `step`: step in the code.
-- `next`: step in the code but doesn't enter deeper context.
-- `out`: will break after leaving the current frame.
-- `up`: go up one frame.
+- `breakpoint <file> <line>`: add a new breakpoint in `file` at `line`
+- `delete <#id>`: delete breakpoint `#id`
+- `enable <#id>`: enable breakpoint `#id`
+- `disable <#id>`: disable breakpoint `#id`
+- `info <what>`:
+    + `breakpoints`: list breakpoints
+- `step`: step in the code
+- `next`: step in the code but doesn't enter deeper context
+- `out`: will break after leaving the current frame
+- `up`: go up one frame
 - `down`: go down one frame
-- `continue`: continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks.
+- `continue`: continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks

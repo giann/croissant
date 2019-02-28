@@ -36,12 +36,22 @@ return function(breakpoints, fromCli)
     commands = {
         breakpoint = function(source, line)
             if source and line then
+                -- Get breakpoints count
+                local count = 1
+                for _, lines in pairs(breakpoints) do
+                    for _, _ in pairs(lines) do
+                        count = count + 1
+                    end
+                end
+
                 -- Args can come from user
                 line = tonumber(line)
 
                 breakpoints[source] = breakpoints[source] or {}
 
                 breakpoints[source][line] = true
+
+                print(colors.green("Breakpoint #" .. count .. " added"))
             else
                 print(colors.yellow "Where required")
             end
