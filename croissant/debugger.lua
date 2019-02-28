@@ -1,11 +1,12 @@
-local colors      = require "term.colors"
-local conf        = require "croissant.conf"
-local LuaPrompt   = require "croissant.luaprompt"
-local Lexer       = require "croissant.lexer"
-local cdo         = require "croissant.do"
-local runChunk    = cdo.runChunk
-local frameEnv    = cdo.frameEnv
-local bindInFrame = cdo.bindInFrame
+local colors                = require "term.colors"
+local conf                  = require "croissant.conf"
+local LuaPrompt             = require "croissant.luaprompt"
+local Lexer                 = require "croissant.lexer"
+local cdo                   = require "croissant.do"
+local runChunk              = cdo.runChunk
+local frameEnv              = cdo.frameEnv
+local bindInFrame           = cdo.bindInFrame
+local commandsMatchingOrder = cdo.commandsMatchingOrder
 
 local function highlight(code)
     local lexer = Lexer()
@@ -20,23 +21,6 @@ local function highlight(code)
 
     return highlighted
 end
-
--- When truncated command name are used, will match the first one in this table
-local commandsMatchingOrder = {
-    "breakpoint",
-    "continue",
-    "down",
-    "delete",
-    "disable",
-    "enable",
-    "info",
-    "next",
-    "out",
-    "step",
-    "trace",
-    "up",
-    "where",
-}
 
 return function(breakpoints, fromCli)
     breakpoints = breakpoints or {}

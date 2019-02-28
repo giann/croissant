@@ -270,4 +270,20 @@ return {
     loadHistory          = loadHistory,
     runChunk             = runChunk,
     loadDebugHistory     = loadDebugHistory,
+    -- When truncated command name are used, will match the first one in this table
+    commandsMatchingOrder = {
+        "breakpoint",
+        "continue",
+        "down",
+        "delete",
+        "disable",
+        "enable",
+        "info",
+        "next",
+        "out",
+        "step",
+        "trace",
+        "up",
+        "where",
+    }
 }

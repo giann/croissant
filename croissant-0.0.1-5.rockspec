@@ -15,7 +15,7 @@ description = {
 
 build = {
     modules = {
-        ["croissant"]           = "croissant/init.lua",
+        ["croissant.repl"]      = "croissant/repl.lua",
         ["croissant.conf"]      = "croissant/conf.lua",
         ["croissant.debugger"]  = "croissant/debugger.lua",
         ["croissant.do"]        = "croissant/do.lua",

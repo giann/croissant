@@ -1,8 +1,9 @@
 #!/usr/bin/env lua
 
-local argparse = require "argparse"
 local colors   = require "term.colors"
-local dump     = require "croissant.do".dump
+local argparse = require "argparse"
+local cdo      = require "croissant.do"
+local dump     = cdo.dump
 
 local parseArgument = function()
     local parser = argparse()
@@ -80,7 +81,7 @@ local route = function(arguments)
         end
     else
         -- Regular REPL
-        require "croissant"()
+        require "croissant.repl"()
     end
 end
 
