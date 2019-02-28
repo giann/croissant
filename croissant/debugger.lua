@@ -13,6 +13,7 @@ local runFile     = cdo.runFile
 local commandsMatchingOrder = {
     "breakpoint",
     "continue",
+    "clear",
     "down",
     "delete",
     "disable",
@@ -93,7 +94,11 @@ return function(script, breakpoints, fromCli)
                 rawenv = _G
             end
 
-            local prompt = not multiline and conf.prompt or conf.continuationPrompt
+            local prompt = colors.reset
+                .. "["
+                .. colors.green(script)
+                .. "] "
+                .. (not multiline and conf.prompt or conf.continuationPrompt)
 
             if not detached then
                 local info = debug.getinfo(3 + (currentFrame or 0))
@@ -130,45 +135,47 @@ return function(script, breakpoints, fromCli)
                 code = lastCommand
             end
 
-            -- Is it a command ?
-            local cmd
-            for _, command in ipairs(commandsMatchingOrder) do
-                local codeCommand, codeArgs = code:match "^(%g+)(.*)"
-                if command == codeCommand
-                    or command:sub(1, #codeCommand) == codeCommand then
+            if code and code ~= "" then
+                -- Is it a command ?
+                local cmd
+                for _, command in ipairs(commandsMatchingOrder) do
+                    local codeCommand, codeArgs = code:match "^(%g+)(.*)"
+                    if command == codeCommand
+                        or command:sub(1, #codeCommand) == codeCommand then
 
-                    local repeatable = false
-                    for _, c in ipairs(repeatableCommands) do
-                        if c == command then
-                            repeatable = true
-                            break
+                        local repeatable = false
+                        for _, c in ipairs(repeatableCommands) do
+                            if c == command then
+                                repeatable = true
+                                break
+                            end
                         end
-                    end
 
-                    lastCommand = repeatable and code or lastCommand
+                        lastCommand = repeatable and code or lastCommand
 
-                    cmd = command
-                    local args = {}
-                    for arg in codeArgs:gmatch "(%g+)" do
-                        table.insert(args, arg)
-                    end
-                    if commands[command](table.unpack(args)) then
-                        return
-                    end
+                        cmd = command
+                        local args = {}
+                        for arg in codeArgs:gmatch "(%g+)" do
+                            table.insert(args, arg)
+                        end
+                        if commands[command](table.unpack(args)) then
+                            return
+                        end
 
-                    break
+                        break
+                    end
                 end
-            end
 
-            -- Don't run any chunk if detached
-            if not cmd and not detached then
-                if runChunk((multiline or "") .. code, env) then
-                    multiline = (multiline or "") .. code .. "\n"
-                else
-                    multiline = nil
+                -- Don't run any chunk if detached
+                if not cmd and not detached then
+                    if runChunk((multiline or "") .. code, env) then
+                        multiline = (multiline or "") .. code .. "\n"
+                    else
+                        multiline = nil
+                    end
+                elseif not cmd then
+                    print(colors.red "Command not recognized")
                 end
-            elseif not cmd then
-                print(colors.red "Command not recognized")
             end
         end
     end

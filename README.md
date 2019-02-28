@@ -77,6 +77,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`delete <#id>`**: delete breakpoint `#id`
 - **`enable <#id>`**: enable breakpoint `#id`
 - **`disable <#id>`**: disable breakpoint `#id`
+- **`clear`**: delete breakpoints
 - **`info <what>`**:
     + `breakpoints`: list breakpoints
 - **`step`** (repeatable): step in the code
