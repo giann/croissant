@@ -40,6 +40,7 @@ local attachedCommands = {
     "down",
     "delete",
     "disable",
+    "eval",
     "enable",
     "exit",
     "info",
@@ -156,6 +157,11 @@ return function(script, breakpoints, fromCli)
                     local codeCommand, codeArgs = code:match "^(%g+)(.*)"
                     if command == codeCommand
                         or command:sub(1, #codeCommand) == codeCommand then
+
+                        if command == "eval" then
+                            code = codeArgs
+                            break
+                        end
 
                         local repeatable = false
                         for _, c in ipairs(repeatableCommands) do
