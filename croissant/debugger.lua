@@ -22,6 +22,7 @@ local repeatableCommands = {
 
 -- Commands allowed when detached
 local detachedCommands = {
+    "args",
     "breakpoint",
     "clear",
     "delete",
@@ -66,7 +67,8 @@ local function highlight(code)
     return highlighted
 end
 
-return function(script, breakpoints, fromCli)
+return function(script, arguments, breakpoints, fromCli)
+    arguments = arguments or {}
     breakpoints = breakpoints or {}
     local history = cdo.loadDebugHistory()
 
@@ -232,6 +234,10 @@ return function(script, breakpoints, fromCli)
     commands = {
         exit = function()
             os.exit()
+        end,
+
+        args = function(...)
+            arguments = {...}
         end,
 
         breakpoint = function(source, line)
@@ -489,7 +495,7 @@ return function(script, breakpoints, fromCli)
             debug.sethook(hook, "clr")
 
             if script then
-                runFile(script)
+                runFile(script, arguments)
             end
         end,
     }

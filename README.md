@@ -43,10 +43,11 @@ luarocks install croissant
 
 ```bash
 # Make sure lua/luarocks binaries are in your $PATH (~/.luarocks/bin)
-croissant [-h] [<input>] [-d [<debugger>] ...]
+croissant [-h] [<input>] [<arguments>] [-d [<debugger>] ...]
 ```
 
-- `input`: a lua file to run or debug. If not provided, croissant will run the REPL.
+- `<input>`: a lua file to run or debug. If not provided, croissant will run the REPL.
+- `<arguments>`: arguments to pass to the `<input>` script
 - `--debugger -d --break -b [file.lua:line] ...`: runs croissant in debugger mode and optionally sets breakpoints
 - `--help -h`: shows help message
 
@@ -73,6 +74,7 @@ require "croissant.debugger"()
 Croissant looks at the first word of your entry and runs any command it matches. It'll otherwise runs the entry as Lua code in the current frame context. If empty, croissant executes the previous repeatable command.
 
 - **`run`**: starts your script
+- **`args`**: set arguments to pass to your script
 - **`breakpoint <file> <line>`**: add a new breakpoint in `file` at `line`
 - **`delete <#id>`**: delete breakpoint `#id`
 - **`enable <#id>`**: enable breakpoint `#id`

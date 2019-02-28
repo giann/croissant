@@ -1,3 +1,7 @@
+for k, v in pairs({...}) do
+    print(k, v)
+end
+
 local function yo(name)
     local yoLocal = "i'm local to yo"
 

@@ -43,7 +43,7 @@ dump = function(t, inc, seen)
             end
         end
 
-        s = s .. ("\t"):rep(inc - 1).. "}"
+        s = s .. ("     "):rep(inc - 1).. "}"
 
         return s
     elseif type(t) == "string" then
@@ -205,7 +205,9 @@ local function runChunk(code, env)
     return false
 end
 
-local function runFile(script)
+local function runFile(script, arguments)
+    arguments = arguments or {}
+
     -- Run file
     local fn, err = loadfile(script)
 
@@ -214,7 +216,7 @@ local function runFile(script)
         return
     end
 
-    local result = table.pack(xpcall(fn, debug.traceback))
+    local result = table.pack(xpcall(fn, debug.traceback, table.unpack(arguments)))
 
     if not result[1] then
         print(colors.red(result[2]))
