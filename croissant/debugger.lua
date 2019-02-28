@@ -32,6 +32,8 @@ return function(breakpoints, fromCli)
     local frameLimit = not fromCli and baseFrame or false
     local currentFrame = 0
 
+    local lastCommand
+
     local commands
     commands = {
         breakpoint = function(source, line)
@@ -333,11 +335,17 @@ return function(breakpoints, fromCli)
                 cdo.appendToDebugHistory(code)
             end
 
+            -- If empty replay previous command
+            if code == "" then
+                code = lastCommand
+            end
+
             -- Is it a command ?
             local cmd
             for command, fn in pairs(commands) do
                 local codeCommand, codeArgs = code:match "^(%g+)(.*)"
                 if command == codeCommand then
+                    lastCommand = code
                     cmd = command
                     local args = {}
                     for arg in codeArgs:gmatch "(%g+)" do

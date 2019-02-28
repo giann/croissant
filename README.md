@@ -58,7 +58,8 @@ Either use croissant to run your file and specify some breakpoints with `--break
 require "croissant.debugger"()
 ```
 
-Croissant looks at the first word of what you entered at the prompt and run any command it matches. Otherwise it'll run you entry as Lua code in the current frame context.
+Croissant looks at the first word of your entry and runs any command it matches. Otherwise runs entry as Lua code in the current frame context.
+If entry empty, executes previous commands.
 
 - `where`: shows code around the current line. Is run for you each time you step in the code or change frame context.
 
