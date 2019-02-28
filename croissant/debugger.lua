@@ -27,6 +27,7 @@ local detachedCommands = {
     "delete",
     "disable",
     "enable",
+    "exit",
     "info",
     "run",
 }
@@ -40,6 +41,7 @@ local attachedCommands = {
     "delete",
     "disable",
     "enable",
+    "exit",
     "info",
     "next",
     "out",
@@ -208,7 +210,6 @@ return function(script, breakpoints, fromCli)
                 breaks[-1] = nil
 
                 if not frameLimit then
-                  
                     frameLimit = frame
                 end
                 doREPL()
@@ -223,6 +224,10 @@ return function(script, breakpoints, fromCli)
     end
 
     commands = {
+        exit = function()
+            os.exit()
+        end,
+
         breakpoint = function(source, line)
             if source and line then
                 -- Get breakpoints count

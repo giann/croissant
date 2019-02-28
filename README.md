@@ -86,6 +86,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`up`** (repeatable): go up one frame
 - **`down`** (repeatable): go down one frame
 - **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
+- **`exit`**: quit
 - **`where`**: shows code around the current line. Is run for you each time you step in the code or change frame context.
 
 <p align="center">
