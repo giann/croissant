@@ -24,6 +24,7 @@ local repeatableCommands = {
 local detachedCommands = {
     "args",
     "breakpoint",
+    "condition",
     "clear",
     "delete",
     "disable",
@@ -37,6 +38,7 @@ local detachedCommands = {
 local attachedCommands = {
     "breakpoint",
     "continue",
+    "condition",
     "clear",
     "down",
     "delete",
@@ -257,8 +259,6 @@ return function(script, arguments, breakpoints, fromCli)
         breakpoint = function(source, line, ...)
             local condition = table.concat({...}, " ")
 
-            print(source, line, cdo.dump(condition))
-
             if source and line then
                 -- Get breakpoints count
                 local count = breakpointCount()
@@ -278,6 +278,43 @@ return function(script, arguments, breakpoints, fromCli)
                 print(colors.green("Breakpoint #" .. count + 1 .. " added"))
             else
                 print(colors.yellow "Where required")
+            end
+        end,
+
+        condition = function(breakpoint, ...)
+            local condition = table.concat({...}, " ")
+
+            -- Condition
+            local cond = true
+            if condition and load("return " .. condition) or load(condition) then
+                cond = condition
+            end
+
+            if breakpoint and condition then
+                breakpoint = tonumber(breakpoint)
+                local count = 1
+                for _, lines in pairs(breakpoints) do
+                    for l, _ in pairs(lines) do
+                        if count == breakpoint then
+                            lines[l] = cond
+
+                            print(colors.yellow("Breakpoint #" .. breakpoint .. " modified"))
+                            return
+                        end
+
+                        count = count + 1
+                    end
+                end
+
+                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
+            else
+                if not breakpoint then
+                    print(colors.yellow "No breakpoint id provided")
+                end
+
+                if not condition then
+                    print(colors.yellow "No condition provided")
+                end
             end
         end,
 
