@@ -6,6 +6,20 @@ local C, Esc = char.C, char.Esc
 
 local Lexer = require "croissant.lexer"
 
+local function merge(t1, t2)
+    local t = {}
+
+    for k, v in pairs(t1) do
+        t[k] = v
+    end
+
+    for k, v in pairs(t2) do
+        t[k] = v
+    end
+
+    return t
+end
+
 local LuaPrompt
 LuaPrompt = Class {
 
@@ -42,8 +56,13 @@ LuaPrompt = Class {
         self.historyIndex = 0
 
         -- Lexing
+        self.builtins = options.builtins or {}
+        -- merge(
+        --     require "croissant.builtins",
+        --     options.builtins or {}
+        -- )
         self.tokens = {}
-        self.lexer = Lexer()
+        self.lexer = Lexer(self.builtins)
 
         self.tokenColors = options.tokenColors
 
@@ -161,6 +180,15 @@ function LuaPrompt:command_complete()
                     table.insert(possibleValues, k)
                     table.insert(highlightedPossibleValues,
                         self.tokenColors.keywords .. k .. colors.reset)
+                end
+            end
+
+            -- Search in builtins
+            for _, k in ipairs(self.builtins) do
+                if k:utf8sub(1, #currentToken.text) == currentToken.text then
+                    table.insert(possibleValues, k)
+                    table.insert(highlightedPossibleValues,
+                        self.tokenColors.builtin .. k .. colors.reset)
                 end
             end
         elseif currentToken.kind == "operator"

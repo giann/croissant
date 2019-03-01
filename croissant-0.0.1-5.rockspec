@@ -22,6 +22,7 @@ build = {
         ["croissant.help"]      = "croissant/help.lua",
         ["croissant.lexer"]     = "croissant/lexer.lua",
         ["croissant.luaprompt"] = "croissant/luaprompt.lua",
+        ["croissant.builtins"]  = "croissant/builtins.lua",
     },
     type = "builtin",
     install = {

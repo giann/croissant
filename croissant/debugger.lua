@@ -340,7 +340,8 @@ return function(script, arguments, breakpoints, fromCli)
                 history     = history,
                 tokenColors = conf.syntaxColors,
                 help        = require(conf.help),
-                quit        = function() end
+                quit        = function() end,
+                builtins    = detached and detachedCommands or attachedCommands
             }:ask()
 
             if code ~= "" and (not history[1] or history[1] ~= code) then

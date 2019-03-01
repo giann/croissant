@@ -10,7 +10,9 @@ local Class = require "hump.class"
 
 local Lexer = Class {
 
-    init = function (self)
+    init = function (self, builtins)
+        builtins = builtins or {}
+
         -- Adapted version of http://peterodding.com/code/lua/lxsh/ for Lua 5.3 syntax
         self.patterns = {}
 
@@ -73,6 +75,17 @@ local Lexer = Class {
                 return expr:match(input, index)
             end
         )
+
+        -- Builtins
+        if #builtins > 0 then
+            self.patterns.builtin = P(builtins[1])
+            for i = 2, #builtins do
+                self.patterns.builtin = self.patterns.builtin + builtins[i]
+            end
+            self.patterns.builtin = self.patterns.builtin * B
+
+            table.insert(self.patterns, "builtin")
+        end
 
         table.insert(self.patterns, "whitespace")
         table.insert(self.patterns, "constant")
