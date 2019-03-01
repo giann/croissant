@@ -6,20 +6,6 @@ local C, Esc = char.C, char.Esc
 
 local Lexer = require "croissant.lexer"
 
-local function merge(t1, t2)
-    local t = {}
-
-    for k, v in pairs(t1) do
-        t[k] = v
-    end
-
-    for k, v in pairs(t2) do
-        t[k] = v
-    end
-
-    return t
-end
-
 local LuaPrompt
 LuaPrompt = Class {
 
@@ -289,6 +275,12 @@ function LuaPrompt:command_help()
                 .. "\n"
         end
     end
+end
+
+function LuaPrompt:after()
+    self.output:write(Prompt.escapeCodes.clr_eos)
+
+    Prompt.after(self)
 end
 
 return LuaPrompt

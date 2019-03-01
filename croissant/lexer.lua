@@ -8,10 +8,27 @@ local B    = -(I + D) -- word boundary
 
 local Class = require "hump.class"
 
+local function merge(t1, t2)
+    local t = {}
+
+    for k, v in pairs(t1) do
+        t[k] = v
+    end
+
+    for k, v in pairs(t2) do
+        t[k] = v
+    end
+
+    return t
+end
+
 local Lexer = Class {
 
     init = function (self, builtins)
-        builtins = builtins or {}
+        builtins = merge(
+            require "croissant.builtins",
+            builtins or {}
+        )
 
         -- Adapted version of http://peterodding.com/code/lua/lxsh/ for Lua 5.3 syntax
         self.patterns = {}

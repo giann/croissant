@@ -70,7 +70,7 @@ local default = {
         operator   = { "yellow" },
         keywords   = { "bright", "magenta" },
         identifier = { "blue" },
-        builtin    = { "bright", "yellow" }
+        builtin    = { "bright", "underscore", "green" }
     },
 
     help = "croissant.help",
