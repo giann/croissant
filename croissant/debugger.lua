@@ -1,4 +1,5 @@
 local colors      = require "term.colors"
+local argparse    = require "argparse"
 local conf        = require "croissant.conf"
 local LuaPrompt   = require "croissant.luaprompt"
 local Lexer       = require "croissant.lexer"
@@ -30,6 +31,7 @@ local detachedCommands = {
     "disable",
     "enable",
     "exit",
+    "help",
     "info",
     "run",
 }
@@ -46,6 +48,7 @@ local attachedCommands = {
     "eval",
     "enable",
     "exit",
+    "help",
     "info",
     "next",
     "out",
@@ -54,6 +57,183 @@ local attachedCommands = {
     "up",
     "where",
 }
+
+local commandErrorMessage
+local commandsHelp = {}
+
+local function parseCommands(detached, args)
+    local parser = argparse()
+
+    if detached or detached == nil then
+        local runCommand = parser:command "run r"
+            :description "Starts your script"
+
+        commandsHelp.run = runCommand:get_help()
+
+        local argsCommand = parser:command "args a"
+            :description "Set arguments to pass to your script"
+        argsCommand:argument "arguments"
+            :args "+"
+
+        commandsHelp.args = argsCommand:get_help()
+    end
+
+    local breakpointCommand = parser:command "breakpoint br b"
+        :description("Add a new breakpoint")
+    breakpointCommand:argument "file"
+        :description "File at which to break"
+        :args(1)
+    breakpointCommand:argument "line"
+        :description "Line at which to break in `file`"
+        :args(1)
+    breakpointCommand:argument "when"
+        :description "Break only if this Lua expressions can be evaluated to be true"
+        :args "*"
+
+    commandsHelp.breakpoint = breakpointCommand:get_help()
+
+    local conditionCommand = parser:command "condition cond"
+        :description "Modify breaking condition of a breakpoint"
+    conditionCommand:argument "id"
+        :description "Breakpoint ID"
+        :args(1)
+    conditionCommand:argument "condition"
+        :description "New breakpoint condition"
+        :args "+"
+
+    commandsHelp.condition = conditionCommand:get_help()
+
+    local enableCommand = parser:command "enable en"
+        :description "Enable a breakpoint"
+    enableCommand:argument "id"
+        :description "Breakpoint ID"
+        :args(1)
+
+    commandsHelp.enable = enableCommand:get_help()
+
+    local disableCommand = parser:command "disable dis di"
+        :description "Disable a breakpoint"
+    disableCommand:argument "id"
+        :description "Breakpoint ID"
+        :args(1)
+
+    commandsHelp.disable = disableCommand:get_help()
+
+    local deleteCommand = parser:command "delete del de d"
+        :description "Delete a breakpoint"
+    deleteCommand:argument "id"
+        :description "Breakpoint ID"
+        :args(1)
+
+    commandsHelp.delete = deleteCommand:get_help()
+
+    local clearCommand = parser:command "clear cl"
+        :description "Delete all breakpoints"
+
+    commandsHelp.clear = clearCommand:get_help()
+
+    local infoCommand = parser:command "info inf i"
+        :description "Get informations about the debugger state"
+    infoCommand:argument "about"
+        :description "`breakpoints` will list breakpoints, `locals` will list locals of the current context"
+        :args(1)
+
+    commandsHelp.info = infoCommand:get_help()
+
+    if not detached or detached == nil then
+        local stepCommand = parser:command "step st s"
+            :description "Step in the code (repeatable)"
+
+        commandsHelp.step = stepCommand:get_help()
+
+        local nextCommand = parser:command "next n"
+            :description "Step in the code without going over any function call (repeatable)"
+
+        commandsHelp.next = nextCommand:get_help()
+
+        local outCommand = parser:command "out o"
+            :description "Will break after leaving the current function (repeatable)"
+
+        commandsHelp.out = outCommand:get_help()
+
+        local upCommand = parser:command "up u"
+            :description "Go up one frame (repeatable)"
+
+        commandsHelp.up = upCommand:get_help()
+
+        local downCommand = parser:command "down d"
+            :description "Go down one frame (repeatable)"
+
+        commandsHelp.down = downCommand:get_help()
+
+        local continueCommand = parser:command "continue cont c"
+            :description("Continue until hitting a breakpoint. If no breakpoint are specified,"
+                .. " clears debug hooks (repeatable)")
+
+        commandsHelp.continue = continueCommand:get_help()
+
+        local evalCommand = parser:command "eval ev e"
+            :description "Evaluates lua code (useful to disambiguate from debugger commands)"
+        evalCommand:argument "expression"
+            :description "Lua expression to evaluate"
+            :args "+"
+
+        commandsHelp.eval = evalCommand:get_help()
+
+        local whereCommand = parser:command "where wh w"
+            :description("Prints code around the current line. Is ran for you each time you step in"
+                .. " the code or change frame context")
+
+        commandsHelp.where = whereCommand:get_help()
+
+        local traceCommand = parser:command "trace tr t"
+            :description "Prints current stack trace and highlights current frame"
+
+        commandsHelp.trace = traceCommand:get_help()
+    end
+
+    local exitCommand = parser:command "exit ex"
+        :description "Quit"
+
+    commandsHelp.exit = exitCommand:get_help()
+
+    local helpCommand = parser:command "help h"
+        :description "Prints help message"
+    helpCommand:argument "about"
+        :description "Command for which you want help"
+        :args "?"
+
+    commandsHelp.help = helpCommand:get_help()
+
+    -- We don't need any
+    parser._options = {}
+
+    commandsHelp[1] = parser:get_help()
+
+    -- If we can't parse it, raise an error instead of os.exit(0)
+    parser.error = function(self, msg)
+        commandErrorMessage = msg
+        error(msg)
+    end
+
+    local ok, parsed = xpcall(parser.parse, function(_)
+        return commandErrorMessage
+    end, parser, args)
+
+    if ok then
+        local keys = {}
+        for key, _ in pairs(parsed) do
+            table.insert(keys, key)
+        end
+
+        -- Zero or one key `about` -> this is help command
+        if #keys == 0 or (#keys == 1 and keys[1] == "about") then
+            parsed.help = true
+        end
+    end
+
+    return ok, parsed
+end
 
 local function highlight(code)
     local lexer = Lexer()
@@ -155,39 +335,42 @@ return function(script, arguments, breakpoints, fromCli)
 
             if code and code ~= "" then
                 -- Is it a command ?
+                local words = {}
+                for word in code:gmatch "(%g+)" do
+                    table.insert(words, word)
+                end
+
+                local ok, parsed = parseCommands(detached, words)
                 local cmd
-                local allowed = detached and detachedCommands or attachedCommands
-                for _, command in ipairs(allowed) do
-                    local codeCommand, codeArgs = code:match "^(%g+)(.*)"
-                    if command == codeCommand
-                        or command:sub(1, #codeCommand) == codeCommand then
-
-                        if command == "eval" then
-                            code = codeArgs
-                            break
-                        end
-
-                        local repeatable = false
-                        for _, c in ipairs(repeatableCommands) do
-                            if c == command then
-                                repeatable = true
+                if ok then
+                    local allowed = detached and detachedCommands or attachedCommands
+                    for _, command in ipairs(allowed) do
+                        if parsed[command] then
+                            if command == "eval" then
+                                code = table.concat(parsed.expression, " ")
                                 break
                             end
-                        end
 
-                        lastCommand = repeatable and code or lastCommand
+                            local repeatable = false
+                            for _, c in ipairs(repeatableCommands) do
+                                if c == command then
+                                    repeatable = true
+                                    break
+                                end
+                            end
 
-                        cmd = command
-                        local args = {}
-                        for arg in codeArgs:gmatch "(%g+)" do
-                            table.insert(args, arg)
-                        end
-                        if commands[command](table.unpack(args)) then
-                            return
-                        end
+                            lastCommand = repeatable and code or lastCommand
 
-                        break
+                            cmd = command
+                            if commands[command](parsed) then
+                                return
+                            end
+
+                            break
+                        end
                     end
+                else
+                    print(colors.yellow(parsed))
                 end
 
                 -- Don't run any chunk if detached
@@ -197,8 +380,6 @@ return function(script, arguments, breakpoints, fromCli)
                     else
                         multiline = nil
                     end
-                elseif not cmd then
-                    print(colors.red "Command not recognized")
                 end
             end
         end
@@ -206,7 +387,7 @@ return function(script, arguments, breakpoints, fromCli)
 
     local function hook(event, line)
         if event == "line" and frameLimit and frame <= frameLimit then
-            doREPL()
+            doREPL(false)
         elseif event == "line" then
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
@@ -236,7 +417,7 @@ return function(script, arguments, breakpoints, fromCli)
                 if not frameLimit then
                     frameLimit = frame
                 end
-                doREPL()
+                doREPL(false)
             end
         elseif event == "call" then
             frame = frame + 1
@@ -248,74 +429,62 @@ return function(script, arguments, breakpoints, fromCli)
     end
 
     commands = {
+        help = function(parsed)
+            print(parsed.about and commandsHelp[parsed.about] or commandsHelp[1])
+        end,
+
         exit = function()
             os.exit()
         end,
 
-        args = function(...)
-            arguments = {...}
+        args = function(parsed)
+            arguments = parsed.arguments
         end,
 
-        breakpoint = function(source, line, ...)
-            local condition = table.concat({...}, " ")
+        breakpoint = function(parsed)
+            -- Get breakpoints count
+            local count = breakpointCount()
 
-            if source and line then
-                -- Get breakpoints count
-                local count = breakpointCount()
-
-                -- Args can come from user
-                line = tonumber(line)
-
-                -- Condition
-                local cond = true
-                if condition and load("return " .. condition) or load(condition) then
-                    cond = condition
-                end
-
-                breakpoints[source] = breakpoints[source] or {}
-                breakpoints[source][line] = cond
-
-                print(colors.green("Breakpoint #" .. count + 1 .. " added"))
-            else
-                print(colors.yellow "Where required")
-            end
-        end,
-
-        condition = function(breakpoint, ...)
-            local condition = table.concat({...}, " ")
+            -- Args can come from user
+            local line = tonumber(parsed.line)
 
             -- Condition
+            local condition = table.concat(parsed.when, " ")
             local cond = true
             if condition and load("return " .. condition) or load(condition) then
                 cond = condition
             end
 
-            if breakpoint and condition then
-                breakpoint = tonumber(breakpoint)
-                local count = 1
-                for _, lines in pairs(breakpoints) do
-                    for l, _ in pairs(lines) do
-                        if count == breakpoint then
-                            lines[l] = cond
+            breakpoints[parsed.file] = breakpoints[parsed.file] or {}
+            breakpoints[parsed.file][line] = cond
 
-                            print(colors.yellow("Breakpoint #" .. breakpoint .. " modified"))
-                            return
-                        end
+            print(colors.green("Breakpoint #" .. count + 1 .. " added"))
+        end,
 
-                        count = count + 1
+        condition = function(parsed)
+            -- Condition
+            local cond = true
+            local condition = table.concat(parsed.condition, " ")
+            if condition and load("return " .. condition) or load(condition) then
+                cond = condition
+            end
+
+            local breakpoint = tonumber(parsed.id)
+            local count = 1
+            for _, lines in pairs(breakpoints) do
+                for l, _ in pairs(lines) do
+                    if count == breakpoint then
+                        lines[l] = cond
+
+                        print(colors.yellow("Breakpoint #" .. breakpoint .. " modified"))
+                        return
                     end
-                end
 
-                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-            else
-                if not breakpoint then
-                    print(colors.yellow "No breakpoint id provided")
-                end
-
-                if not condition then
-                    print(colors.yellow "No condition provided")
+                    count = count + 1
                 end
             end
+
+            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
         end,
 
         clear = function()
@@ -324,82 +493,65 @@ return function(script, arguments, breakpoints, fromCli)
             print(colors.yellow "All breakpoints removed")
         end,
 
-        delete = function(breakpoint)
-            if breakpoint then
-                breakpoint = tonumber(breakpoint)
-                local count = 1
-                for _, lines in pairs(breakpoints) do
-                    for l, _ in pairs(lines) do
-                        if count == breakpoint then
-                            lines[l] = nil
+        delete = function(parsed)
+            local breakpoint = tonumber(parsed.id)
+            local count = 1
+            for _, lines in pairs(breakpoints) do
+                for l, _ in pairs(lines) do
+                    if count == breakpoint then
+                        lines[l] = nil
 
-                            print(colors.yellow("Breakpoint #" .. breakpoint .. " deleted"))
-                            return
-                        end
-
-                        count = count + 1
+                        print(colors.yellow("Breakpoint #" .. breakpoint .. " deleted"))
+                        return
                     end
-                end
 
-                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-            else
-                print(colors.yellow "No breakpoint id provided")
+                    count = count + 1
+                end
             end
+
+            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
         end,
 
-        enable = function(breakpoint)
-            if breakpoint then
-                breakpoint = tonumber(breakpoint)
-                local count = 1
-                for _, lines in pairs(breakpoints) do
-                    for l, _ in pairs(lines) do
-                        if count == breakpoint then
-                            lines[l] = true
+        enable = function(parsed)
+            local breakpoint = tonumber(parsed.id)
+            local count = 1
+            for _, lines in pairs(breakpoints) do
+                for l, _ in pairs(lines) do
+                    if count == breakpoint then
+                        lines[l] = true
 
-                            print(colors.yellow("Breakpoint #" .. breakpoint .. " enabled"))
-                            return
-                        end
-
-                        count = count + 1
+                        print(colors.yellow("Breakpoint #" .. breakpoint .. " enabled"))
+                        return
                     end
-                end
 
-                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-            else
-                print(colors.yellow "No breakpoint id provided")
+                    count = count + 1
+                end
             end
+
+            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
         end,
 
-        disable = function(breakpoint)
-            if breakpoint then
-                breakpoint = tonumber(breakpoint)
-                local count = 1
-                for _, lines in pairs(breakpoints) do
-                    for l, _ in pairs(lines) do
-                        if count == breakpoint then
-                            lines[l] = false
+        disable = function(parsed)
+            local breakpoint = tonumber(parsed.id)
+            local count = 1
+            for _, lines in pairs(breakpoints) do
+                for l, _ in pairs(lines) do
+                    if count == breakpoint then
+                        lines[l] = false
 
-                            print(colors.yellow("Breakpoint #" .. breakpoint .. " disabled"))
-                            return
-                        end
-
-                        count = count + 1
+                        print(colors.yellow("Breakpoint #" .. breakpoint .. " disabled"))
+                        return
                     end
-                end
 
-                print(colors.yellow("Could not find breakpoint #" .. breakpoint))
-            else
-                print(colors.yellow "No breakpoint id provided")
+                    count = count + 1
+                end
             end
+
+            print(colors.yellow("Could not find breakpoint #" .. breakpoint))
         end,
 
-        info = function(what)
-            if not what then
-                print(colors.yellow "Info on what ?")
-
-                return
-            end
-
+        info = function(parsed)
+            local what = parsed.about
             if what == "breakpoints" then
                 local count = 1
                 local breakStr = ""
@@ -586,7 +738,7 @@ return function(script, arguments, breakpoints, fromCli)
             return true
         end,
 
-        run = function(...)
+        run = function()
             debug.sethook(hook, "clr")
 
             if script then

@@ -74,7 +74,7 @@ require "croissant.debugger"()
 Croissant looks at the first word of your entry and runs any command it matches. It'll otherwise runs the entry as Lua code in the current frame context. If empty, croissant executes the previous repeatable command.
 
 - **`run`**: starts your script
-- **`args`**: set arguments to pass to your script
+- **`args <argument> ...`**: set arguments to pass to your script
 - **`breakpoint <file> <line> [<when>]`**: add a new breakpoint in `file` at `line` if `<when>` (lua code evaluated in the breakpoint context) is true or absent
 - **`condition <#id> <when>`**: change breaking condition of breakpoint `#id`
 - **`delete <#id>`**: delete breakpoint `#id`
@@ -85,42 +85,24 @@ Croissant looks at the first word of your entry and runs any command it matches.
     + `breakpoints`: list breakpoints
     + `locals`: list locals of the current frame
 - **`step`** (repeatable): step in the code
-- **`next`** (repeatable): step in the code but doesn't enter deeper context
-- **`out`** (repeatable): will break after leaving the current frame
+- **`next`** (repeatable): step in the code going over any function call
+- **`out`** (repeatable): will break after leaving the current function
 - **`up`** (repeatable): go up one frame
 - **`down`** (repeatable): go down one frame
 - **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
 - **`eval <code>`**: runs `code` (useful to disambiguate from debugger commands)
 - **`exit`**: quit
-- **`where`**: shows code around the current line. Is run for you each time you step in the code or change frame context.
+- **`where`**: prints code around the current line. Is ran for you each time you step in the code or change frame context
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-where.png" alt="where command">
 </p>
 
-- **`trace`**: shows current stack trace and highlight current frame.
+- **`trace`**: prints current stack trace and highlights current frame.
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-trace.png" alt="where trace">
 </p>
-
-You can truncate commands any way you want. If the truncated command is ambiguous, croissant will choose matching commands in this order:
-- `breakpoint`
-- `continue`
-- `down`
-- `delete`
-- `disable`
-- `eval`
-- `enable`
-- `exit`
-- `info`
-- `next`
-- `out`
-- `step`
-- `run`
-- `trace`
-- `up`
-- `where`
 
 ## Configuration
 
