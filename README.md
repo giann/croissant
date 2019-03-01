@@ -73,6 +73,7 @@ require "croissant.debugger"()
 
 Croissant looks at the first word of your entry and runs any command it matches. It'll otherwise runs the entry as Lua code in the current frame context. If empty, croissant executes the previous repeatable command.
 
+- **`help [<command>]`**: prints general help or help about specified command
 - **`run`**: starts your script
 - **`args <argument> ...`**: set arguments to pass to your script
 - **`breakpoint <file> <line> [<when>]`**: add a new breakpoint in `file` at `line` if `<when>` (lua code evaluated in the breakpoint context) is true or absent
@@ -95,13 +96,13 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`where`**: prints code around the current line. Is ran for you each time you step in the code or change frame context
 
 <p align="center">
-    <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-where.png" alt="where command">
+    <img src="https://github.com/giann/croissant/raw/master/assets/debugger-where.png" alt="where command">
 </p>
 
 - **`trace`**: prints current stack trace and highlights current frame.
 
 <p align="center">
-    <img src="https://github.com/giann/croissant/raw/debugger/assets/debugger-trace.png" alt="where trace">
+    <img src="https://github.com/giann/croissant/raw/master/assets/debugger-trace.png" alt="where trace">
 </p>
 
 ## Configuration
