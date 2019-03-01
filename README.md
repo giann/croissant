@@ -121,3 +121,37 @@ You can truncate commands any way you want. If the truncated command is ambiguou
 - `trace`
 - `up`
 - `where`
+
+## Configuration
+
+You can customize some aspect of croissant by writing a `~/.croissantrc` lua file. Here are the default values than you can overwrite:
+
+```lua
+return {
+    -- Default prompt
+    prompt = "→ ",
+    -- Prompt used when editing multiple lines of code
+    continuationPrompt = ".... ",
+
+    -- Maximum amount of remembered lines
+    -- Croissant manages two history file: one for the repl (~/.croissant_history),
+    -- one for the debugger (~/.croissant_debugger_history)
+    historyLimit = 1000,
+
+    -- Syntax highlighting colors
+    -- Available colors are: black, red, green, yellow, blue, magenta, cyan, white.
+    -- They can also be combined with modifiers: bright, dim, underscore, blink, reverse, hidden
+    syntaxColors = {
+        constant   = { "bright", "yellow" },
+        string     = { "green" },
+        comment    = { "dim", "cyan" },
+        number     = { "yellow" },
+        operator   = { "yellow" },
+        keywords   = { "bright", "magenta" },
+        identifier = { "blue" },
+    },
+
+    -- Nesting limit at which croissant will stop when pretty printing a table
+    dumpLimit = 5,
+}
+```
