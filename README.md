@@ -6,7 +6,7 @@
 🥐 A Lua REPL and debugger implemented in Lua
 
 <p align="center">
-    <img src="https://github.com/giann/croissant/raw/master/assets/croissant.gif" alt="croissant">
+    <img src="https://github.com/giann/croissant/raw/master/assets/repl.gif" alt="croissant">
 </p>
 
 **Note:** Croissant is in active development.
@@ -52,6 +52,10 @@ croissant [-h] [<input>] [<arguments>] [-d [<debugger>] ...]
 - `--help -h`: shows help message
 
 ## Debugger
+
+<p align="center">
+    <img src="https://github.com/giann/croissant/raw/master/assets/debugger.gif" alt="croissant">
+</p>
 
 ### Using the cli
 
