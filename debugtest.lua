@@ -40,8 +40,8 @@ local function sayIt()
     return true
 end
 
-for i = 1, 10 do
-    print(i)
+for idx = 1, 10 do
+    print(idx)
 end
 
 local it = sayIt()

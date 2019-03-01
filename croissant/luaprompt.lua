@@ -263,7 +263,7 @@ end
 function LuaPrompt:command_help()
     local currentToken = self:getCurrentToken()
 
-    if currentToken and currentToken.kind == "identifier" then
+    if currentToken and (currentToken.kind == "identifier" or currentToken.kind == "builtin") then
         local doc = self.help[currentToken.text]
 
         if doc then
