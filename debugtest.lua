@@ -46,6 +46,8 @@ end
 
 local it = sayIt()
 
+yo "lo"
+
 print(debug.getinfo(1).source)
 
 return it, "yeah !", { 1, 2, 3 }

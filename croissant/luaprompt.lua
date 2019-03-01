@@ -278,9 +278,11 @@ function LuaPrompt:command_help()
 end
 
 function LuaPrompt:after()
-    self.output:write(Prompt.escapeCodes.clr_eos)
-
     Prompt.after(self)
+
+    self:command_end_of_line()
+
+    self.output:write(Prompt.escapeCodes.clr_eos)
 end
 
 return LuaPrompt

@@ -83,11 +83,8 @@ local function parseCommands(detached, args)
 
     local breakpointCommand = parser:command "breakpoint br b"
         :description("Add a new breakpoint")
-    breakpointCommand:argument "file"
-        :description "File at which to break"
-        :args(1)
-    breakpointCommand:argument "line"
-        :description "Line at which to break in `file`"
+    breakpointCommand:argument "where"
+        :description "Where to break. Function, line number in current file or `file:line`"
         :args(1)
     breakpointCommand:argument "when"
         :description "Break only if this Lua expressions can be evaluated to be true"
@@ -355,6 +352,7 @@ return function(script, arguments, breakpoints, fromCli)
                 code = lastCommand
             end
 
+            local badCommand
             if code and code ~= "" then
                 -- Is it a command ?
                 local words = {}
@@ -391,12 +389,13 @@ return function(script, arguments, breakpoints, fromCli)
                             break
                         end
                     end
-                else
+                elseif not parsed:match "^unknown command" then
                     print(colors.yellow(parsed))
+                    badCommand = true
                 end
 
                 -- Don't run any chunk if detached
-                if not cmd and not detached then
+                if not badCommand and not cmd and not detached then
                     if runChunk((multiline or "") .. code, env) then
                         multiline = (multiline or "") .. code .. "\n"
                     else
@@ -407,17 +406,19 @@ return function(script, arguments, breakpoints, fromCli)
         end
     end
 
+    local lastEnteredFunction
     local function hook(event, line)
         if event == "line" and frameLimit and frame <= frameLimit then
             doREPL(false)
         elseif event == "line" then
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
-            local breakpoint = breaks and (breaks[tonumber(line)] or breaks[-1])
+            local breakpoint = breaks and breaks[tonumber(line)]
 
-            -- -1 means `break at first line of code`
-            if breaks and breakpoint then
-                breaks[-1] = nil
+            -- -1 means `break at any line of code`
+            if (breaks and breakpoint)
+                or (breakpoints[-1] and breakpoints[-1][info.name] and lastEnteredFunction == info.name) then
+                lastEnteredFunction = nil
 
                 if type(breakpoint) == "string" then
                     local fenv = frameEnv(true, currentFrame - 1)
@@ -444,6 +445,8 @@ return function(script, arguments, breakpoints, fromCli)
         elseif event == "call" then
             frame = frame + 1
             currentFrame = 0
+
+            lastEnteredFunction = debug.getinfo(2).name
         elseif event == "return" then
             frame = frame - 1
             currentFrame = 0
@@ -478,18 +481,31 @@ return function(script, arguments, breakpoints, fromCli)
             -- Get breakpoints count
             local count = breakpointCount()
 
-            -- Args can come from user
-            local line = tonumber(parsed.line)
-
             -- Condition
             local condition = table.concat(parsed.when, " ")
             local cond = true
-            if condition and load("return " .. condition) or load(condition) then
+            if condition and condition ~= "" and (load("return " .. condition) or load(condition)) then
                 cond = condition
             end
 
-            breakpoints[parsed.file] = breakpoints[parsed.file] or {}
-            breakpoints[parsed.file][line] = cond
+            -- Line in inspected current file
+            if tonumber(parsed.where) then
+                if script then
+                    breakpoints[script] = breakpoints[script] or {}
+                    breakpoints[script][tonumber(parsed.where)] = cond
+                else
+                    -- TODO: get current script ~= debugger
+                    print(colors.red "Could not defer current file")
+                end
+            elseif parsed.where:match "^([^:]*):(%d+)$" then -- Line in a file
+                local file, line = parsed.where:match "^([^:]*):(%d+)$"
+
+                breakpoints[file] = breakpoints[file] or {}
+                breakpoints[file][tonumber(line)] = cond
+            else                                             -- Function name
+                breakpoints[-1] = breakpoints[-1] or {}
+                breakpoints[-1][parsed.where] = cond
+            end
 
             print(colors.green("Breakpoint #" .. count + 1 .. " added"))
         end,
@@ -593,8 +609,7 @@ return function(script, arguments, breakpoints, fromCli)
                         breakStr = breakStr ..
                             "\n      "
                             .. count .. ". "
-                            .. colors.green(s) .. ":"
-                            .. colors.yellow(l)
+                            .. (s ~= -1 and colors.green(s) .. ":" .. colors.yellow(l) or colors.blue(l))
 
                         if type(on) == "string" then
                             breakStr = breakStr
@@ -607,7 +622,7 @@ return function(script, arguments, breakpoints, fromCli)
                             end
                         else
                             breakStr = breakStr ..
-                                (on and colors.green "on" or colors.bright(colors.black("off")))
+                                (on and colors.green " on" or colors.bright(colors.black(" off")))
                         end
                         count = count + 1
                     end

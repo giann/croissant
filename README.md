@@ -76,7 +76,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`help [<command>]`**: prints general help or help about specified command
 - **`run`**: starts your script
 - **`args <argument> ...`**: set arguments to pass to your script
-- **`breakpoint <file> <line> [<when>]`**: add a new breakpoint in `file` at `line` if `<when>` (lua code evaluated in the breakpoint context) is true or absent
+- **`breakpoint <where> [<when>]`**: add a new breakpoint at `<where>` (can be line number in current file, `file.lua:line` or a function name) if `<when>` (lua code evaluated in the breakpoint context) is true or absent
 - **`condition <#id> <when>`**: change breaking condition of breakpoint `#id`
 - **`delete <#id>`**: delete breakpoint `#id`
 - **`enable <#id>`**: enable breakpoint `#id`
