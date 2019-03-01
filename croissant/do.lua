@@ -15,6 +15,19 @@ dump = function(t, inc, seen)
             .. colors.dim .. colors.cyan .. "-- " .. tostring(t) .. colors.reset
             .. "\n"
 
+        local metatable = getmetatable(t)
+        if metatable then
+            s = s ..  ("     "):rep(inc)
+                .. colors.dim(colors.cyan "metatable = ")
+            if not seen[metatable] then
+                s = s
+                    .. dump(metatable, inc + 1, seen) .. ",\n"
+            else
+                s = s
+                    .. colors.yellow .. tostring(metatable) .. colors.reset .. ",\n"
+            end
+        end
+
         for k, v in pairs(t) do
             s = s .. ("     "):rep(inc)
 
