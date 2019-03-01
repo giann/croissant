@@ -32,6 +32,10 @@ local function sayIt()
     return true
 end
 
+for i = 1, 10 do
+    print(i)
+end
+
 local it = sayIt()
 
 print(debug.getinfo(1).source)

@@ -203,19 +203,33 @@ return function(script, arguments, breakpoints, fromCli)
     end
 
     local function hook(event, line)
-        -- if event == "line" then
-        --     print(line, debug.getinfo(2).source, frame, frameLimit)
-        -- end
-
         if event == "line" and frameLimit and frame <= frameLimit then
             doREPL()
         elseif event == "line" then
             local info = debug.getinfo(2)
             local breaks = breakpoints[info.source:sub(2)]
+            local breakpoint = breaks and (breaks[tonumber(line)] or breaks[-1])
 
             -- -1 means `break at first line of code`
-            if breaks and (breaks[tonumber(line)] or breaks[-1]) then
+            if breaks and breakpoint then
                 breaks[-1] = nil
+
+                if type(breakpoint) == "string" then
+                    local fenv = frameEnv(true, currentFrame - 1)
+                    local env = setmetatable({}, {
+                        __index = fenv,
+                        __newindex = function(env, name, value)
+                            bindInFrame(8 + 2, name, value, env)
+                        end
+                    })
+
+                    local f = load("return " .. breakpoint, "croissant", "t", env)
+                        or load(breakpoint, "croissant", "t", env)
+
+                    if not f or not f() then
+                        return
+                    end
+                end
 
                 if not frameLimit then
                     frameLimit = frame
@@ -240,7 +254,11 @@ return function(script, arguments, breakpoints, fromCli)
             arguments = {...}
         end,
 
-        breakpoint = function(source, line)
+        breakpoint = function(source, line, ...)
+            local condition = table.concat({...}, " ")
+
+            print(source, line, cdo.dump(condition))
+
             if source and line then
                 -- Get breakpoints count
                 local count = breakpointCount()
@@ -248,9 +266,14 @@ return function(script, arguments, breakpoints, fromCli)
                 -- Args can come from user
                 line = tonumber(line)
 
-                breakpoints[source] = breakpoints[source] or {}
+                -- Condition
+                local cond = true
+                if condition and load("return " .. condition) or load(condition) then
+                    cond = condition
+                end
 
-                breakpoints[source][line] = true
+                breakpoints[source] = breakpoints[source] or {}
+                breakpoints[source][line] = cond
 
                 print(colors.green("Breakpoint #" .. count + 1 .. " added"))
             else
@@ -349,8 +372,21 @@ return function(script, arguments, breakpoints, fromCli)
                             "\n      "
                             .. count .. ". "
                             .. colors.green(s) .. ":"
-                            .. colors.yellow(l) .. " "
-                            .. (on and colors.green "on" or colors.bright(colors.black("off")))
+                            .. colors.yellow(l)
+
+                        if type(on) == "string" then
+                            breakStr = breakStr
+                                .. " when "
+                            for kind, text in Lexer():tokenize(on) do
+                                breakStr = breakStr
+                                    .. (conf.syntaxColors[kind] or "")
+                                    .. text
+                                    .. colors.reset
+                            end
+                        else
+                            breakStr = breakStr ..
+                                (on and colors.green "on" or colors.bright(colors.black("off")))
+                        end
                         count = count + 1
                     end
                 end
