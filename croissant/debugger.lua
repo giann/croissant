@@ -34,6 +34,7 @@ local detachedCommands = {
     "help",
     "info",
     "run",
+    "watch",
 }
 
 -- Commands allowed when attached
@@ -56,6 +57,7 @@ local attachedCommands = {
     "trace",
     "up",
     "where",
+    "watch",
 }
 
 local commandErrorMessage
@@ -92,6 +94,15 @@ local function parseCommands(detached, args)
 
     breakpointCommand._options = {}
     commandsHelp.breakpoint = breakpointCommand:get_help()
+
+    local watchCommand = parser:command "watch wa"
+        :description("Add a new watchpoint")
+    watchCommand:argument "expression"
+        :description "Break only if this evaluated Lua expression changes value"
+        :args "+"
+
+    watchCommand._options = {}
+    commandsHelp.watch = watchCommand:get_help()
 
     local conditionCommand = parser:command "condition cond"
         :description "Modify breaking condition of a breakpoint"
@@ -415,24 +426,58 @@ return function(script, arguments, breakpoints, fromCli)
             local breaks = breakpoints[info.source:sub(2)]
             local breakpoint = breaks and breaks[tonumber(line)]
 
+            if not breakpoint
+                and (breakpoints[-1] and breakpoints[-1][info.name] and lastEnteredFunction == info.name) then
+                breaks = breakpoints[-1]
+                breakpoint = breakpoints[-1][info.name]
+            end
+
+            if not breakpoint
+                and (breakpoints[-1] and breakpoints[-1][-1]) then
+                breaks = breakpoints[-1]
+                breakpoint = breakpoints[-1][-1]
+            end
+
+            local breakType = type(breakpoint)
             -- -1 means `break at any line of code`
-            if (breaks and breakpoint)
-                or (breakpoints[-1] and breakpoints[-1][info.name] and lastEnteredFunction == info.name) then
+            if breaks and breakpoint then
                 lastEnteredFunction = nil
 
-                if type(breakpoint) == "string" then
-                    local fenv = frameEnv(true, currentFrame - 1)
-                    local env = setmetatable({}, {
+                local fenv, env, watchpointChanged
+                if breakType == "string" or breakType == "table" then
+                    fenv = frameEnv(true, currentFrame - 1)
+                    env = setmetatable({}, {
                         __index = fenv,
                         __newindex = function(env, name, value)
                             bindInFrame(8 + 2, name, value, env)
                         end
                     })
+                end
 
+                if breakType == "string" then -- Breakpoint condition
                     local f = load("return " .. breakpoint, "croissant", "t", env)
                         or load(breakpoint, "croissant", "t", env)
 
                     if not f or not f() then
+                        return
+                    end
+                elseif breakType == "table" then -- Watchpoints
+                    for _, watchpoint in ipairs(breakpoint) do
+                        local f = load("return " .. watchpoint.expression, "croissant", "t", env)
+                            or load(watchpoint.expression, "croissant", "t", env)
+
+                        if f then
+                            local newValue = f()
+                            if newValue ~= watchpoint.lastValue then
+                                watchpointChanged = watchpointChanged or {}
+                                table.insert(watchpointChanged, watchpoint)
+                            end
+                            watchpoint.previousValue = watchpoint.lastValue
+                            watchpoint.lastValue = newValue
+                        end
+                    end
+
+                    if not watchpointChanged then
                         return
                     end
                 end
@@ -440,6 +485,25 @@ return function(script, arguments, breakpoints, fromCli)
                 if not frameLimit then
                     frameLimit = frame
                 end
+
+                if watchpointChanged and #watchpointChanged > 0 then
+                    local breakStr = "\n"
+                    for _, changed in ipairs(watchpointChanged) do
+                        for kind, text in Lexer():tokenize(changed.expression) do
+                            breakStr = breakStr
+                                .. (conf.syntaxColors[kind] or "")
+                                .. text
+                                .. colors.reset
+                        end
+                        breakStr = breakStr
+                            .. " changed from "
+                            .. cdo.dump(changed.previousValue)
+                            .. " to "
+                            .. cdo.dump(changed.lastValue)
+                    end
+                    print(breakStr)
+                end
+
                 doREPL(false)
             end
         elseif event == "call" then
@@ -508,6 +572,27 @@ return function(script, arguments, breakpoints, fromCli)
             end
 
             print(colors.green("Breakpoint #" .. count + 1 .. " added"))
+        end,
+
+        watch = function(parsed)
+            -- Get breakpoints count
+            local count = breakpointCount()
+
+            local expression = table.concat(parsed.expression, " ")
+            if not load("return " .. expression) and not load(expression) then
+                print(colors.red "Expression could not be parsed")
+                return
+            end
+
+            breakpoints[-1] = breakpoints[-1] or {}
+            breakpoints[-1][-1] = breakpoints[-1][-1] or {}
+
+            table.insert(breakpoints[-1][-1], {
+                expression = expression,
+                lastValue = nil
+            })
+
+            print(colors.green("Watchpoint #" .. count + 1 .. " added"))
         end,
 
         condition = function(parsed)
@@ -606,25 +691,47 @@ return function(script, arguments, breakpoints, fromCli)
                 local breakStr = ""
                 for s, lines in pairs(breakpoints) do
                     for l, on in pairs(lines) do
-                        breakStr = breakStr ..
-                            "\n      "
-                            .. count .. ". "
-                            .. (s ~= -1 and colors.green(s) .. ":" .. colors.yellow(l) or colors.blue(l))
+                        if l == -1 then
+                            for _, watchpoint in ipairs(on) do
+                                breakStr = breakStr ..
+                                    "\n      "
+                                    .. count .. ". When `"
 
-                        if type(on) == "string" then
-                            breakStr = breakStr
-                                .. " when "
-                            for kind, text in Lexer():tokenize(on) do
+                                for kind, text in Lexer():tokenize(watchpoint.expression) do
+                                    breakStr = breakStr
+                                        .. (conf.syntaxColors[kind] or "")
+                                        .. text
+                                        .. colors.reset
+                                end
+
                                 breakStr = breakStr
-                                    .. (conf.syntaxColors[kind] or "")
-                                    .. text
-                                    .. colors.reset
+                                    .. "` is different from "
+                                    .. cdo.dump(watchpoint.lastValue)
+
+                                count = count + 1
                             end
                         else
                             breakStr = breakStr ..
-                                (on and colors.green " on" or colors.bright(colors.black(" off")))
+                                "\n      "
+                                .. count .. ". "
+                                .. (s ~= -1 and colors.green(s) .. ":" .. colors.yellow(l) or colors.blue(l))
+
+                            if type(on) == "string" then
+                                breakStr = breakStr
+                                    .. " when `"
+                                for kind, text in Lexer():tokenize(on) do
+                                    breakStr = breakStr
+                                        .. (conf.syntaxColors[kind] or "")
+                                        .. text
+                                        .. colors.reset
+                                end
+                                breakStr = breakStr .. "`"
+                            else
+                                breakStr = breakStr ..
+                                    (on and colors.green " on" or colors.bright(colors.black(" off")))
+                            end
+                            count = count + 1
                         end
-                        count = count + 1
                     end
                 end
 

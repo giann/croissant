@@ -80,14 +80,15 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`help [<command>]`**: prints general help or help about specified command
 - **`run`**: starts your script
 - **`args <argument> ...`**: set arguments to pass to your script
+- **`watch <expression>`**: breaks when evaluated Lua `expression` changes value
 - **`breakpoint <where> [<when>]`**: add a new breakpoint at `<where>` (can be line number in current file, `file.lua:line` or a function name) if `<when>` (lua code evaluated in the breakpoint context) is true or absent
 - **`condition <#id> <when>`**: change breaking condition of breakpoint `#id`
-- **`delete <#id>`**: delete breakpoint `#id`
-- **`enable <#id>`**: enable breakpoint `#id`
-- **`disable <#id>`**: disable breakpoint `#id`
-- **`clear`**: delete breakpoints
+- **`delete <#id>`**: delete breakpoint or watchpoint `#id`
+- **`enable <#id>`**: enable breakpoint or watchpoint `#id`
+- **`disable <#id>`**: disable breakpoint or watchpoint `#id`
+- **`clear`**: delete breakpoints and watchpoints
 - **`info <what>`**:
-    + `breakpoints`: list breakpoints
+    + `breakpoints`: list breakpoints and watchpoints
     + `locals`: list locals of the current frame
 - **`step`** (repeatable): step in the code
 - **`next`** (repeatable): step in the code going over any function call
