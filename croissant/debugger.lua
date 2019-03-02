@@ -510,13 +510,20 @@ return function(script, arguments, breakpoints, fromCli)
         end
     end
 
+    -- Return false for stack frames without a source file,
+    -- which includes C frames, Lua bytecode, and `loadstring` functions
+    local function frameHasFile(info)
+        return info.source:sub(1, 1) == "@"
+    end
+
     local lastEnteredFunction
     local function hook(event, line)
+        local info = debug.getinfo(2)
+        local hasFile = frameHasFile(info)
+
         if event == "line" and frameLimit and frame <= frameLimit then
             doREPL(false)
         elseif event == "line" then
-            local info = debug.getinfo(2)
-
             -- Don't debug code from watchpoints/breakpoints/displays
             if info.source == "__debugger__" then
                 return
@@ -615,12 +622,12 @@ return function(script, arguments, breakpoints, fromCli)
 
                 doREPL(false)
             end
-        elseif event == "call" then
+        elseif event == "call"  and hasFile then
             frame = frame + 1
             currentFrame = 0
 
             lastEnteredFunction = debug.getinfo(2).name
-        elseif event == "return" then
+        elseif event == "return" and hasFile then
             frame = frame - 1
             currentFrame = 0
         end
