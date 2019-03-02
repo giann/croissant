@@ -1,3 +1,5 @@
+require "compat53"
+
 local colors      = require "term.colors"
 local argparse    = require "argparse"
 local conf        = require "croissant.conf"

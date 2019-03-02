@@ -1,6 +1,6 @@
 
 package = "croissant"
-version = "0.0.1-5"
+version = "0.0.1-6"
 rockspec_format = "3.0"
 
 source = {
@@ -33,9 +33,10 @@ build = {
 }
 
 dependencies = {
-    "lua >= 5.3",
-    "sirocco >= 0.0.1-4",
+    "lua >= 5.1",
+    "sirocco >= 0.0.1-5",
     "hump >= 0.4-2",
     "lpeg >= 1.0.1-1",
-    "argparse >= 0.6.0-1"
+    "argparse >= 0.6.0-1",
+    "compat53 >= 0.7-1",
 }

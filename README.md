@@ -27,7 +27,7 @@ Croissant is based on [sirocco](https://github.com/giann/sirocco).
 ### Planned
 
 - Customization: keybinding, theme, etc.
-- Multiple Lua versions support
+- Support for Lua 5.1/JIT/5.2/
 
 ## Installation
 

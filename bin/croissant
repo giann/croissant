@@ -1,5 +1,7 @@
 #!/usr/bin/env lua
 
+require "compat53"
+
 local colors   = require "term.colors"
 local argparse = require "argparse"
 local cdo      = require "croissant.do"

@@ -1,3 +1,5 @@
+require "compat53"
+
 local conf      = require "croissant.conf"
 local cdo       = require "croissant.do"
 local runChunk  = cdo.runChunk
