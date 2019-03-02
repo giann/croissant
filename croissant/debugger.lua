@@ -14,50 +14,52 @@ local repeatableCommands = {
     "continue",
     "down",
     "next",
-    "out",
+    "finish",
     "step",
     "up",
 }
-
--- Warning: Order matters. When truncated command name are used, will match the first one in these tables.
 
 -- Commands allowed when detached
 local detachedCommands = {
     "args",
     "breakpoint",
-    "condition",
     "clear",
+    "condition",
     "delete",
     "disable",
+    "display",
     "enable",
     "exit",
     "help",
     "info",
     "run",
+    "undisplay",
     "watch",
 }
 
 -- Commands allowed when attached
 local attachedCommands = {
     "breakpoint",
-    "continue",
-    "condition",
     "clear",
-    "down",
+    "condition",
+    "continue",
     "delete",
     "disable",
-    "eval",
+    "display",
+    "down",
     "enable",
+    "eval",
     "exit",
     "help",
     "info",
     "next",
-    "out",
+    "finish",
     "step",
     "trace",
+    "undisplay",
     "up",
-    "where",
     "watch",
+    "where",
 }
 
 local commandErrorMessage
@@ -72,7 +74,9 @@ local function parseCommands(detached, args)
             :description "Starts your script"
 
         runCommand._options = {}
-        commandsHelp.run = runCommand:get_help()
+        commandsHelp.run = not commandsHelp.run
+            and runCommand:get_help()
+            or commandsHelp.run
 
         local argsCommand = parser:command "args a"
             :description "Set arguments to pass to your script"
@@ -80,7 +84,9 @@ local function parseCommands(detached, args)
             :args "+"
 
         argsCommand._options = {}
-        commandsHelp.args = argsCommand:get_help()
+        commandsHelp.args = not commandsHelp.args
+            and argsCommand:get_help()
+            or commandsHelp.args
     end
 
     local breakpointCommand = parser:command "breakpoint br b"
@@ -93,7 +99,9 @@ local function parseCommands(detached, args)
         :args "*"
 
     breakpointCommand._options = {}
-    commandsHelp.breakpoint = breakpointCommand:get_help()
+    commandsHelp.breakpoint = not commandsHelp.breakpoint
+        and breakpointCommand:get_help()
+        or commandsHelp.breakpoint
 
     local watchCommand = parser:command "watch wa"
         :description("Add a new watchpoint")
@@ -101,8 +109,27 @@ local function parseCommands(detached, args)
         :description "Break only if this evaluated Lua expression changes value"
         :args "+"
 
-    watchCommand._options = {}
-    commandsHelp.watch = watchCommand:get_help()
+    local displayCommand = parser:command "display dp"
+        :description("Prints expression each time the program stops")
+    displayCommand:argument "expression"
+        :description "Lua expression to print"
+        :args "+"
+
+    displayCommand._options = {}
+    commandsHelp.display = not commandsHelp.display
+        and displayCommand:get_help()
+        or commandsHelp.display
+
+    local undisplayCommand = parser:command "undisplay undp udp"
+        :description("Removes display")
+    undisplayCommand:argument "id"
+        :description "ID of display to remove"
+        :args(1)
+
+    undisplayCommand._options = {}
+    commandsHelp.undisplay = not commandsHelp.undisplay
+        and undisplayCommand:get_help()
+        or commandsHelp.undisplay
 
     local conditionCommand = parser:command "condition cond"
         :description "Modify breaking condition of a breakpoint"
@@ -114,7 +141,9 @@ local function parseCommands(detached, args)
         :args "+"
 
     conditionCommand._options = {}
-    commandsHelp.condition = conditionCommand:get_help()
+    commandsHelp.condition = not commandsHelp.condition
+        and conditionCommand:get_help()
+        or commandsHelp.condition
 
     local enableCommand = parser:command "enable en"
         :description "Enable a breakpoint"
@@ -123,7 +152,9 @@ local function parseCommands(detached, args)
         :args(1)
 
     enableCommand._options = {}
-    commandsHelp.enable = enableCommand:get_help()
+    commandsHelp.enable = not commandsHelp.enable
+        and enableCommand:get_help()
+        or commandsHelp.enable
 
     local disableCommand = parser:command "disable dis di"
         :description "Disable a breakpoint"
@@ -132,7 +163,9 @@ local function parseCommands(detached, args)
         :args(1)
 
     disableCommand._options = {}
-    commandsHelp.disable = disableCommand:get_help()
+    commandsHelp.disable = not commandsHelp.disable
+        and disableCommand:get_help()
+        or commandsHelp.disable
 
     local deleteCommand = parser:command "delete del de d"
         :description "Delete a breakpoint"
@@ -141,60 +174,80 @@ local function parseCommands(detached, args)
         :args(1)
 
     deleteCommand._options = {}
-    commandsHelp.delete = deleteCommand:get_help()
+    commandsHelp.delete = not commandsHelp.delete
+        and deleteCommand:get_help()
+        or commandsHelp.delete
 
     local clearCommand = parser:command "clear cl"
-        :description "Delete all breakpoints"
+        :description "Delete all breakpoints, watchpoints and displays"
 
     clearCommand._options = {}
-    commandsHelp.clear = clearCommand:get_help()
+    commandsHelp.clear = not commandsHelp.clear
+        and clearCommand:get_help()
+        or commandsHelp.clear
 
     local infoCommand = parser:command "info inf i"
         :description "Get informations about the debugger state"
     infoCommand:argument "about"
-        :description "`breakpoints` will list breakpoints, `locals` will list locals of the current context"
+        :description("`breakpoints` will list breakpoints, "
+            .. "`locals` will list locals of the current context, "
+            .. "`displays` will list displays")
         :args(1)
 
     infoCommand._options = {}
-    commandsHelp.info = infoCommand:get_help()
+    commandsHelp.info = not commandsHelp.info
+        and infoCommand:get_help()
+        or commandsHelp.info
 
     if not detached or detached == nil then
         local stepCommand = parser:command "step st s"
             :description "Step in the code (repeatable)"
 
         stepCommand._options = {}
-        commandsHelp.step = stepCommand:get_help()
+        commandsHelp.step = not commandsHelp.step
+            and stepCommand:get_help()
+            or commandsHelp.step
 
         local nextCommand = parser:command "next n"
             :description "Step in the code without going over any function call (repeatable)"
 
         nextCommand._options = {}
-        commandsHelp.next = nextCommand:get_help()
+        commandsHelp.next = not commandsHelp.next
+            and nextCommand:get_help()
+            or commandsHelp.next
 
-        local outCommand = parser:command "out o"
+        local finishCommand = parser:command "finish f"
             :description "Will break after leaving the current function (repeatable)"
 
-        outCommand._options = {}
-        commandsHelp.out = outCommand:get_help()
+        finishCommand._options = {}
+        commandsHelp.finish = not commandsHelp.finish
+            and finishCommand:get_help()
+            or commandsHelp.finish
 
         local upCommand = parser:command "up u"
             :description "Go up one frame (repeatable)"
 
         upCommand._options = {}
-        commandsHelp.up = upCommand:get_help()
+        commandsHelp.up = not commandsHelp.up
+            and upCommand:get_help()
+            or commandsHelp.up
 
         local downCommand = parser:command "down d"
             :description "Go down one frame (repeatable)"
 
         downCommand._options = {}
-        commandsHelp.down = downCommand:get_help()
+        commandsHelp.down = not commandsHelp.down
+            and downCommand:get_help()
+            or commandsHelp.down
 
         local continueCommand = parser:command "continue cont c"
             :description("Continue until hitting a breakpoint. If no breakpoint are specified,"
                 .. " clears debug hooks (repeatable)")
 
         continueCommand._options = {}
-        commandsHelp.continue = continueCommand:get_help()
+        commandsHelp.continue = not commandsHelp.continue
+            and continueCommand:get_help()
+            or commandsHelp.continue
 
         local evalCommand = parser:command "eval ev e"
             :description "Evaluates lua code (useful to disambiguate from debugger commands)"
@@ -203,27 +256,35 @@ local function parseCommands(detached, args)
             :args "+"
 
         evalCommand._options = {}
-        commandsHelp.eval = evalCommand:get_help()
+        commandsHelp.eval = not commandsHelp.eval
+            and evalCommand:get_help()
+            or commandsHelp.eval
 
         local whereCommand = parser:command "where wh w"
             :description("Prints code around the current line. Is ran for you each time you step in"
                 .. " the code or change frame context")
 
         whereCommand._options = {}
-        commandsHelp.where = whereCommand:get_help()
+        commandsHelp.where = not commandsHelp.where
+            and whereCommand:get_help()
+            or commandsHelp.where
 
         local traceCommand = parser:command "trace tr t"
             :description "Prints current stack trace and highlights current frame"
 
         traceCommand._options = {}
-        commandsHelp.trace = traceCommand:get_help()
+        commandsHelp.trace = not commandsHelp.trace
+            and traceCommand:get_help()
+            or commandsHelp.trace
     end
 
     local exitCommand = parser:command "exit ex"
         :description "Quit"
 
     exitCommand._options = {}
-    commandsHelp.exit = exitCommand:get_help()
+    commandsHelp.exit = not commandsHelp.exit
+        and exitCommand:get_help()
+        or commandsHelp.exit
 
     local helpCommand = parser:command "help h"
         :description "Prints help message"
@@ -232,12 +293,16 @@ local function parseCommands(detached, args)
         :args "?"
 
     helpCommand._options = {}
-    commandsHelp.help = helpCommand:get_help()
+    commandsHelp.help = not commandsHelp.help
+        and helpCommand:get_help()
+        or commandsHelp.help
 
     -- We don't need any
     parser._options = {}
 
-    commandsHelp[1] = parser:get_help()
+    commandsHelp[1] = not commandsHelp[1]
+        and parser:get_help()
+        or commandsHelp[1]
 
     -- If we can't parse it, raise an error instead of os.exit(0)
     parser.error = function(self, msg)
@@ -264,6 +329,9 @@ local function parseCommands(detached, args)
     return ok, parsed
 end
 
+-- Call it on time to populate help
+parseCommands(nil)
+
 local function highlight(code)
     local lexer = Lexer()
     local highlighted = ""
@@ -281,6 +349,7 @@ end
 return function(script, arguments, breakpoints, fromCli)
     arguments = arguments or {}
     breakpoints = breakpoints or {}
+    local displays = {}
     local history = cdo.loadDebugHistory()
 
     local frame = 0
@@ -316,6 +385,28 @@ return function(script, arguments, breakpoints, fromCli)
                         bindInFrame(8 + currentFrame, name, value, env)
                     end
                 })
+
+                -- Print displays
+                local displayStr = ""
+                for id, display in ipairs(displays) do
+                    local f = load("return " .. display, "__debugger__", "t", env)
+                        or load(display, "__debugger__", "t", env)
+
+                    if not f then
+                        print(colors.red("Display #" .. id .. " expression could not be parsed"))
+                        return
+                    end
+
+                    local ok, value = pcall(f)
+
+                    displayStr = displayStr .. "      "
+                        .. id .. ". `"
+                        .. highlight(display) .. "`: "
+                        .. (ok and cdo.dump(value) or "failed with error: " .. colors.red(value))
+                end
+                if displayStr ~= "" then
+                    print("\n" .. displayStr .. "\n")
+                end
             elseif detached then
                 env = _G
                 rawenv = _G
@@ -423,6 +514,12 @@ return function(script, arguments, breakpoints, fromCli)
             doREPL(false)
         elseif event == "line" then
             local info = debug.getinfo(2)
+
+            -- Don't debug code from watchpoints/breakpoints/displays
+            if info.source == "__debugger__" then
+                return
+            end
+
             local breaks = breakpoints[info.source:sub(2)]
             local breakpoint = breaks and breaks[tonumber(line)]
 
@@ -455,25 +552,40 @@ return function(script, arguments, breakpoints, fromCli)
                 end
 
                 if breakType == "string" then -- Breakpoint condition
-                    local f = load("return " .. breakpoint, "croissant", "t", env)
-                        or load(breakpoint, "croissant", "t", env)
+                    local f = load("return " .. breakpoint, "__debugger__", "t", env)
+                        or load(breakpoint, "__debugger__", "t", env)
 
-                    if not f or not f() then
+                    if not f then
+                        return
+                    end
+
+                    local ok, value = pcall(f)
+
+                    if not ok then
+                        print(colors.red("Breakpoint condition failed with error: ".. value))
+                    end
+
+                    if not ok or not value then
                         return
                     end
                 elseif breakType == "table" then -- Watchpoints
                     for _, watchpoint in ipairs(breakpoint) do
-                        local f = load("return " .. watchpoint.expression, "croissant", "t", env)
-                            or load(watchpoint.expression, "croissant", "t", env)
+                        local f = load("return " .. watchpoint.expression, "__debugger__", "t", env)
+                            or load(watchpoint.expression, "__debugger__", "t", env)
 
                         if f then
-                            local newValue = f()
-                            if newValue ~= watchpoint.lastValue then
-                                watchpointChanged = watchpointChanged or {}
-                                table.insert(watchpointChanged, watchpoint)
+                            local ok, newValue = pcall(f)
+
+                            if ok then
+                                if newValue ~= watchpoint.lastValue then
+                                    watchpointChanged = watchpointChanged or {}
+                                    table.insert(watchpointChanged, watchpoint)
+                                end
+                                watchpoint.previousValue = watchpoint.lastValue
+                                watchpoint.lastValue = newValue
+                            else
+                                print(colors.red("Watchpoint expression failed with error: " .. newValue))
                             end
-                            watchpoint.previousValue = watchpoint.lastValue
-                            watchpoint.lastValue = newValue
                         end
                     end
 
@@ -489,13 +601,8 @@ return function(script, arguments, breakpoints, fromCli)
                 if watchpointChanged and #watchpointChanged > 0 then
                     local breakStr = "\n"
                     for _, changed in ipairs(watchpointChanged) do
-                        for kind, text in Lexer():tokenize(changed.expression) do
-                            breakStr = breakStr
-                                .. (conf.syntaxColors[kind] or "")
-                                .. text
-                                .. colors.reset
-                        end
                         breakStr = breakStr
+                            .. highlight(changed.expression)
                             .. " changed from "
                             .. cdo.dump(changed.previousValue)
                             .. " to "
@@ -550,6 +657,9 @@ return function(script, arguments, breakpoints, fromCli)
             local cond = true
             if condition and condition ~= "" and (load("return " .. condition) or load(condition)) then
                 cond = condition
+            elseif condition and condition ~= "" then
+                print(colors.yellow "Condition `" .. condition .. "` could not be parsed")
+                return
             end
 
             -- Line in inspected current file
@@ -623,8 +733,9 @@ return function(script, arguments, breakpoints, fromCli)
 
         clear = function()
             breakpoints = {}
+            displays = {}
 
-            print(colors.yellow "All breakpoints removed")
+            print(colors.yellow "All breakpoints, watchpoints and displays removed")
         end,
 
         delete = function(parsed)
@@ -696,15 +807,7 @@ return function(script, arguments, breakpoints, fromCli)
                                 breakStr = breakStr ..
                                     "\n      "
                                     .. count .. ". When `"
-
-                                for kind, text in Lexer():tokenize(watchpoint.expression) do
-                                    breakStr = breakStr
-                                        .. (conf.syntaxColors[kind] or "")
-                                        .. text
-                                        .. colors.reset
-                                end
-
-                                breakStr = breakStr
+                                    .. highlight(watchpoint.expression)
                                     .. "` is different from "
                                     .. cdo.dump(watchpoint.lastValue)
 
@@ -719,13 +822,8 @@ return function(script, arguments, breakpoints, fromCli)
                             if type(on) == "string" then
                                 breakStr = breakStr
                                     .. " when `"
-                                for kind, text in Lexer():tokenize(on) do
-                                    breakStr = breakStr
-                                        .. (conf.syntaxColors[kind] or "")
-                                        .. text
-                                        .. colors.reset
-                                end
-                                breakStr = breakStr .. "`"
+                                    .. highlight(on)
+                                    .. "`"
                             else
                                 breakStr = breakStr ..
                                     (on and colors.green " on" or colors.bright(colors.black(" off")))
@@ -760,6 +858,42 @@ return function(script, arguments, breakpoints, fromCli)
                     end
                 end
                 print("\n" .. s)
+            elseif what == "displays" then
+                local displayStr = ""
+                for id, display in ipairs(displays) do
+                    displayStr = displayStr ..
+                            "\n      "
+                            .. id .. ". `"
+                            .. highlight(display)
+                            .. "`"
+                end
+                if displayStr ~= "" then
+                    print(displayStr .. "\n")
+                else
+                    print(colors.yellow "No display defined")
+                end
+            end
+        end,
+
+        display = function(parsed)
+            local expression = table.concat(parsed.expression, " ")
+
+            if not load("return " .. expression) and not load(expression) then
+                print(colors.red "Expression could not be parsed")
+                return
+            end
+
+            table.insert(displays, expression)
+
+            print(colors.green("Display #" .. #displays .. " added"))
+        end,
+
+        undisplay = function(parsed)
+            if displays[tonumber(parsed.id)] then
+                table.remove(displays, tonumber(parsed.id))
+                print(colors.yellow("Removed display #" .. parsed.id))
+            else
+                print(colors.red("Could not find display #" .. parsed.id))
             end
         end,
 
@@ -773,7 +907,7 @@ return function(script, arguments, breakpoints, fromCli)
             return true
         end,
 
-        out = function()
+        finish = function()
             frameLimit = frame - 1
             return true
         end,

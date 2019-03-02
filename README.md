@@ -86,13 +86,16 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`delete <#id>`**: delete breakpoint or watchpoint `#id`
 - **`enable <#id>`**: enable breakpoint or watchpoint `#id`
 - **`disable <#id>`**: disable breakpoint or watchpoint `#id`
-- **`clear`**: delete breakpoints and watchpoints
+- **`display <expression>`**: display evalued Lua `expression` each time the program stops
+- **`undisplay <#id>`**: dlete display `#id`
+- **`clear`**: deletes all breakpoints, watchpoints and displays
 - **`info <what>`**:
     + `breakpoints`: list breakpoints and watchpoints
     + `locals`: list locals of the current frame
+    + `displays`: list displays
 - **`step`** (repeatable): step in the code
 - **`next`** (repeatable): step in the code going over any function call
-- **`out`** (repeatable): will break after leaving the current function
+- **`finish`** (repeatable): will break after leaving the current function
 - **`up`** (repeatable): go up one frame
 - **`down`** (repeatable): go down one frame
 - **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
