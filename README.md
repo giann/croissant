@@ -113,6 +113,23 @@ Croissant looks at the first word of your entry and runs any command it matches.
     <img src="https://github.com/giann/croissant/raw/master/assets/debugger-trace.png" alt="where trace">
 </p>
 
+### Caveats
+
+- The debugger will slow your program down. Croissant will try and clear hooks whenever possible but if you know you won't hit anymore breakpoints, do a `clear` before doing `continue`.
+- A breakpoint on a function name will not work if the function is not called by its name in your code. Example:
+
+```
+local function stopMe()
+    -- ...
+end
+
+local function call(fn)
+    fn()
+end
+
+call(stopMe)
+```
+
 ## Configuration
 
 You can customize some aspect of croissant by writing a `~/.croissantrc` lua file. Here are the default values than you can overwrite:
