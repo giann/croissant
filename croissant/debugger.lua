@@ -818,7 +818,7 @@ return function(script, arguments, breakpoints, fromCli)
                     print(colors.yellow "No breakpoint defined")
                 end
             elseif what == "locals" then
-                local locals = frameEnv(false, currentFrame + 1)
+                local locals = frameEnv(false, currentFrame + 2)
 
                 local keys = {}
                 for k, _ in pairs(locals) do
