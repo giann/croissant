@@ -327,7 +327,7 @@ return function(script, arguments, breakpoints, fromCli)
             if rframe ~= currentFrame and not detached then
                 rframe = currentFrame
 
-                commands.where()
+                commands.where(nil, -1)
 
                 fenv, rawenv = frameEnv(true, currentFrame)
                 env = setmetatable({}, {
@@ -440,6 +440,7 @@ return function(script, arguments, breakpoints, fromCli)
                                 return
                             elseif not cmdOk then
                                 -- Something broke, bail
+                                print(colors.red "Error in debugger command, quitting", continue)
                                 debug.sethook()
                                 return
                             end
@@ -940,8 +941,9 @@ return function(script, arguments, breakpoints, fromCli)
             return false
         end,
 
-        where = function()
-            local info = debug.getinfo(4 + (currentFrame or 0))
+        where = function(_, offset)
+            offset = offset or 0
+            local info = debug.getinfo(5 + offset + (currentFrame or 0))
 
             local source = ""
             local srcType = info.source:sub(1, 1)
