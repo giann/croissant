@@ -100,6 +100,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`down`** (repeatable): go down one frame
 - **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
 - **`eval <code>`**: runs `code` (useful to disambiguate from debugger commands)
+- **`depth`**: set depth limit when pretty printing values
 - **`exit`**: quit
 - **`where`**: prints code around the current line. Is ran for you each time you step in the code or change frame context
 
@@ -115,7 +116,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 
 ## Caveats
 
-- Pretty printing values can be expensive in CPU and memory: avoid dumping either large of deeply nested tables. You can play with the `dumpLimit` value in your `~/.croissantrc` to avoid exploring to far down in complex tables.
+- Pretty printing values can be expensive in CPU and memory: avoid dumping either large of deeply nested tables. You can play with the `dumpLimit` value in your `~/.croissantrc` or the `depth` command to avoid exploring to far down in complex tables.
 - The debugger will slow your program down. Croissant will try and clear hooks whenever possible but if you know you won't hit anymore breakpoints, do a `clear` before doing `continue`.
 - A breakpoint on a function name will not work if the function is not called by its name in your code. Example:
 

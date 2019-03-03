@@ -27,6 +27,7 @@ local detachedCommands = {
     "breakpoint",
     "clear",
     "condition",
+    "depth",
     "delete",
     "disable",
     "display",
@@ -45,6 +46,7 @@ local attachedCommands = {
     "clear",
     "condition",
     "continue",
+    "depth",
     "delete",
     "disable",
     "display",
@@ -221,6 +223,15 @@ evalCommand:argument "expression"
 
 evalCommand._options = {}
 commandsHelp.eval = evalCommand:get_help()
+
+local depthCommand = parser:command "depth dep"
+    :description "Limit depth at which croissant goes to pretty print returned values"
+depthCommand:argument "limit"
+    :description "Depth"
+    :args(1)
+
+depthCommand._options = {}
+commandsHelp.depth = depthCommand:get_help()
 
 local whereCommand = parser:command "where wh w"
     :description("Prints code around the current line. Is ran for you each time you step in"
@@ -635,6 +646,10 @@ return function(script, arguments, breakpoints, fromCli)
 
         args = function(parsed)
             arguments = parsed.arguments
+        end,
+
+        depth = function(parsed)
+            conf.dumpLimit = tonumber(parsed.limit)
         end,
 
         breakpoint = function(parsed)
