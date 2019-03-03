@@ -100,7 +100,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`down`** (repeatable): go down one frame
 - **`continue`** (repeatable): continue until hitting a breakpoint. If no breakpoint are specified, clears debug hooks
 - **`eval <code>`**: runs `code` (useful to disambiguate from debugger commands)
-- **`depth`**: set depth limit when pretty printing values
+- **`depth <depthLimit> <itemsLimit>`**: set depth limit and number of items when pretty printing values
 - **`exit`**: quit
 - **`where`**: prints code around the current line. Is ran for you each time you step in the code or change frame context
 

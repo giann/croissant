@@ -493,7 +493,7 @@ return function(script, arguments, breakpoints, fromCli)
     end
 
     local lastEnteredFunction
-    local first = 0
+    local first = true
     local stackDepth, previousStackDepth
     local function hook(event, line)
         previousStackDepth = stackDepth
@@ -509,16 +509,11 @@ return function(script, arguments, breakpoints, fromCli)
             currentFrame = 0
         end
 
-        if event == "line" and first and first < 2 then
-            first = first + 1
-        end
-
-        if event == "line" and
-            ((frameLimit and frame <= frameLimit) or (first and first > 1 and not fromCli)) then
+        if (frameLimit and frame <= frameLimit) or (first and not fromCli) then
             frameLimit = first and frame or frameLimit
             first = false
             doREPL(false)
-        elseif event == "line" then
+        else
             local info = debug.getinfo(2)
 
             -- Don't debug code from watchpoints/breakpoints/displays
@@ -925,8 +920,7 @@ return function(script, arguments, breakpoints, fromCli)
         end,
 
         up = function()
-            print(currentFrame, frame)
-            if currentFrame + 1 > frame - 2 then
+            if currentFrame + 1 > frame then
                 print(colors.yellow "No further context")
                 return false
             end
@@ -957,8 +951,8 @@ return function(script, arguments, breakpoints, fromCli)
                 if info then
                     trace = trace ..
                         (i - 5 == currentFrame
-                            and colors.bright(colors.green("    ❱ " .. (i - 4) .. " │ "))
-                            or  colors.bright(colors.black("      " .. (i - 4) .. " │ ")))
+                            and colors.bright(colors.green("    ❱ " .. (i - 5) .. " │ "))
+                            or  colors.bright(colors.black("      " .. (i - 5) .. " │ ")))
                         .. colors.green(info.short_src) .. ":"
                         .. (info.currentline > 0 and colors.yellow(info.currentline) .. ":" or "")
                         .. " in " .. colors.magenta(info.namewhat)
@@ -967,7 +961,7 @@ return function(script, arguments, breakpoints, fromCli)
                 end
 
                 i = i + 1
-            until not info or i - 3 > frame
+            until not info or i - 5 > frame
 
             print("\n" .. trace)
 
@@ -1062,6 +1056,6 @@ return function(script, arguments, breakpoints, fromCli)
     else
         -- We're required inside a script, debug.sethook must be the last instruction otherwise
         -- we'll break at the last debugger instruction
-        debug.sethook(hook, "l")
+        return debug.sethook(hook, "l")
     end
 end

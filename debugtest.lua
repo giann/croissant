@@ -28,6 +28,8 @@ local function sayHello(name)
 
     local sayHelloLocal = "i'm local to sayHello"
 
+    require "croissant.debugger"()
+
     yo(name)
 
     watchMe = watchMe + 1
