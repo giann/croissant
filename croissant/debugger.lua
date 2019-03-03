@@ -435,7 +435,12 @@ return function(script, arguments, breakpoints, fromCli)
                             lastCommand = repeatable and code or lastCommand
 
                             cmd = command
-                            if commands[command](parsed) then
+                            local cmdOk, continue = pcall(commands[command], parsed)
+                            if cmdOk and continue then
+                                return
+                            elseif not cmdOk then
+                                -- Something broke, bail
+                                debug.sethook()
                                 return
                             end
 
@@ -459,20 +464,43 @@ return function(script, arguments, breakpoints, fromCli)
         end
     end
 
-    -- Return false for stack frames without a source file,
-    -- which includes C frames, Lua bytecode, and `loadstring` functions
-    local function frameHasFile(info)
-        return info.source:sub(1, 1) == "@"
+    local function countTrace(trace)
+        local count = 1
+        for _ in trace:gmatch "\n" do
+            count = count + 1
+        end
+        return count
     end
 
     local lastEnteredFunction
+    local first = 0
+    local stackDepth, previousStackDepth
     local function hook(event, line)
-        local info = debug.getinfo(2)
-        local hasFile = frameHasFile(info)
+        previousStackDepth = stackDepth
+        stackDepth = countTrace(debug.traceback())
 
-        if event == "line" and frameLimit and frame <= frameLimit then
+        if previousStackDepth and (previousStackDepth < stackDepth) then -- call
+            frame = frame + 1
+            currentFrame = 0
+
+            lastEnteredFunction = debug.getinfo(2).name
+        elseif previousStackDepth and (previousStackDepth > stackDepth) then -- return
+            frame = frame - 1
+            currentFrame = 0
+        end
+
+        if event == "line" and first and first < 2 then
+            first = first + 1
+        end
+
+        if event == "line" and
+            ((frameLimit and frame <= frameLimit) or (first and first > 1 and not fromCli)) then
+            frameLimit = first and frame or frameLimit
+            first = false
             doREPL(false)
         elseif event == "line" then
+            local info = debug.getinfo(2)
+
             -- Don't debug code from watchpoints/breakpoints/displays
             if info.source == "__debugger__" then
                 return
@@ -571,14 +599,6 @@ return function(script, arguments, breakpoints, fromCli)
 
                 doREPL(false)
             end
-        elseif event == "call"  and hasFile then
-            frame = frame + 1
-            currentFrame = 0
-
-            lastEnteredFunction = debug.getinfo(2).name
-        elseif event == "return" and hasFile then
-            frame = frame - 1
-            currentFrame = 0
         end
     end
 
@@ -871,7 +891,8 @@ return function(script, arguments, breakpoints, fromCli)
         end,
 
         up = function()
-            if currentFrame + 1 > frame then
+            print(currentFrame, frame)
+            if currentFrame + 1 > frame - 2 then
                 print(colors.yellow "No further context")
                 return false
             end
@@ -895,13 +916,13 @@ return function(script, arguments, breakpoints, fromCli)
         trace = function()
             local trace = ""
             local info
-            local i = 4
+            local i = 5
             repeat
                 info = debug.getinfo(i)
 
                 if info then
                     trace = trace ..
-                        (i - 4 == currentFrame
+                        (i - 5 == currentFrame
                             and colors.bright(colors.green("    ❱ " .. (i - 4) .. " │ "))
                             or  colors.bright(colors.black("      " .. (i - 4) .. " │ ")))
                         .. colors.green(info.short_src) .. ":"
@@ -912,7 +933,7 @@ return function(script, arguments, breakpoints, fromCli)
                 end
 
                 i = i + 1
-            until not info or i - 4 > frame
+            until not info or i - 3 > frame
 
             print("\n" .. trace)
 
@@ -986,11 +1007,16 @@ return function(script, arguments, breakpoints, fromCli)
         end,
 
         run = function()
-            debug.sethook(hook, "clr")
+            -- If not breakpoints, don't hook
+            if breakpointCount() > 0 then
+                debug.sethook(hook, "l")
+            end
 
             if script then
                 runFile(script, arguments)
             end
+
+            debug.sethook()
         end,
     }
 
@@ -1001,6 +1027,6 @@ return function(script, arguments, breakpoints, fromCli)
     else
         -- We're required inside a script, debug.sethook must be the last instruction otherwise
         -- we'll break at the last debugger instruction
-        debug.sethook(hook, "clr")
+        debug.sethook(hook, "l")
     end
 end
