@@ -338,25 +338,30 @@ return function(script, arguments, breakpoints, fromCli)
                 })
 
                 -- Print displays
-                local displayStr = ""
-                for id, display in ipairs(displays) do
-                    local f = load("return " .. display, "__debugger__", "t", env)
-                        or load(display, "__debugger__", "t", env)
+                if #displays > 0 then
+                    io.write("\n")
+                    for id, display in ipairs(displays) do
+                        local f = load("return " .. display, "__debugger__", "t", env)
+                            or load(display, "__debugger__", "t", env)
 
-                    if not f then
-                        print(colors.red("Display #" .. id .. " expression could not be parsed"))
-                        return
+                        if not f then
+                            print(colors.red("Display #" .. id .. " expression could not be parsed"))
+                            return
+                        end
+
+                        local ok, value = pcall(f)
+
+                        io.write("      "
+                            .. id .. ". `"
+                            .. highlight(display) .. "`: ")
+
+                        if ok then
+                            cdo.dump(value)
+                        else
+                            io.write("failed with error: " .. colors.red(value))
+                        end
                     end
-
-                    local ok, value = pcall(f)
-
-                    displayStr = displayStr .. "      "
-                        .. id .. ". `"
-                        .. highlight(display) .. "`: "
-                        .. (ok and cdo.dump(value) or "failed with error: " .. colors.red(value))
-                end
-                if displayStr ~= "" then
-                    print("\n" .. displayStr .. "\n")
+                    io.write("\n\n")
                 end
             elseif detached then
                 env = _G
@@ -586,16 +591,21 @@ return function(script, arguments, breakpoints, fromCli)
                 end
 
                 if watchpointChanged and #watchpointChanged > 0 then
-                    local breakStr = "\n"
+                    io.write("\n")
                     for _, changed in ipairs(watchpointChanged) do
-                        breakStr = breakStr
-                            .. highlight(changed.expression)
+                        io.write(
+                            highlight(changed.expression)
                             .. " changed from "
-                            .. cdo.dump(changed.previousValue)
-                            .. " to "
-                            .. cdo.dump(changed.lastValue)
+                        )
+
+
+                        cdo.dump(changed.previousValue)
+
+                        io.write(" to ")
+
+                        cdo.dump(changed.lastValue)
                     end
-                    print(breakStr)
+                    io.write("\n")
                 end
 
                 doREPL(false)
@@ -778,42 +788,45 @@ return function(script, arguments, breakpoints, fromCli)
             local what = parsed.about
             if what == "breakpoints" then
                 local count = 1
-                local breakStr = ""
                 for s, lines in pairs(breakpoints) do
                     for l, on in pairs(lines) do
                         if l == -1 then
                             for _, watchpoint in ipairs(on) do
-                                breakStr = breakStr ..
+                                io.write(
                                     "\n      "
                                     .. count .. ". When `"
                                     .. highlight(watchpoint.expression)
                                     .. "` is different from "
-                                    .. cdo.dump(watchpoint.lastValue)
+                                )
+
+                                cdo.dump(watchpoint.lastValue)
 
                                 count = count + 1
                             end
                         else
-                            breakStr = breakStr ..
+                            io.write(
                                 "\n      "
                                 .. count .. ". "
                                 .. (s ~= -1 and colors.green(s) .. ":" .. colors.yellow(l) or colors.blue(l))
+                            )
 
                             if type(on) == "string" then
-                                breakStr = breakStr
-                                    .. " when `"
+                                io.write(" when `"
                                     .. highlight(on)
                                     .. "`"
+                                )
                             else
-                                breakStr = breakStr ..
+                                io.write(
                                     (on and colors.green " on" or colors.bright(colors.black(" off")))
+                                )
                             end
                             count = count + 1
                         end
                     end
                 end
 
-                if breakStr ~= "" then
-                    print(breakStr .. "\n")
+                if count > 1 then
+                    io.write("\n\n")
                 else
                     print(colors.yellow "No breakpoint defined")
                 end
@@ -826,17 +839,18 @@ return function(script, arguments, breakpoints, fromCli)
                 end
                 table.sort(keys)
 
-                local s = ""
+                io.write "\n"
                 for _, k in ipairs(keys) do
                     if k ~= "_ENV" and k ~= "(*temporary)" and  k ~= "_G" then
-                        s = s
-                            .. colors.blue(k)
-                            .. " = "
-                            .. cdo.dump(locals[k], 1)
-                            .. "\n"
+                        io.write(colors.blue(k)
+                            .. " = ")
+
+                        cdo.dump(locals[k], 1)
+
+                        io.write "\n"
                     end
                 end
-                print("\n" .. s)
+                io.write "\n"
             elseif what == "displays" then
                 local displayStr = ""
                 for id, display in ipairs(displays) do

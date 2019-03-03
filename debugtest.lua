@@ -1,5 +1,11 @@
 local watchMe = 1
 
+local t = {
+    1,2,3,
+    yo = "sldkfj",
+    watchMe = 1
+}
+
 for k, v in pairs({...}) do
     print(k, v)
 end
@@ -10,6 +16,7 @@ local function yo(name)
     print(name)
 
     watchMe = watchMe + 1
+    t.watchMe = t.watchMe + 1
 
     print "third level"
 end
@@ -24,6 +31,7 @@ local function sayHello(name)
     yo(name)
 
     watchMe = watchMe + 1
+    t.watchMe = t.watchMe + 1
 
     print(yo, anUpvalue, sayHelloLocal, newGlobal)
 end
@@ -36,6 +44,7 @@ local function sayIt()
     sayHello("joe")
 
     watchMe = watchMe + 1
+    t.watchMe = t.watchMe + 1
 
     return true
 end

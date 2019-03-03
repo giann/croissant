@@ -27,7 +27,7 @@ Croissant is based on [sirocco](https://github.com/giann/sirocco).
 ### Planned
 
 - Customization: keybinding, theme, etc.
-- Support for Lua 5.1/JIT/5.2/
+- Support for Lua 5.1/JIT/5.2
 
 ## Installation
 
@@ -113,12 +113,13 @@ Croissant looks at the first word of your entry and runs any command it matches.
     <img src="https://github.com/giann/croissant/raw/master/assets/debugger-trace.png" alt="where trace">
 </p>
 
-### Caveats
+## Caveats
 
+- Pretty printing values can be expensive in CPU and memory: avoid dumping either large of deeply nested tables. You can play with the `dumpLimit` value in your `~/.croissantrc` to avoid exploring to far down in complex tables.
 - The debugger will slow your program down. Croissant will try and clear hooks whenever possible but if you know you won't hit anymore breakpoints, do a `clear` before doing `continue`.
 - A breakpoint on a function name will not work if the function is not called by its name in your code. Example:
 
-```
+```lua
 local function stopMe()
     -- ...
 end

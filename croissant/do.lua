@@ -4,66 +4,72 @@ local conf   = require "croissant.conf"
 local dump
 dump = function(t, inc, seen)
     if type(t) == "table" and (inc or 0) < conf.dumpLimit then
-        local s = ""
         inc = inc or 1
         seen = seen or {}
 
         seen[t] = true
 
-        s = s
-            .. "{  "
+        io.write(
+            "{  "
             .. colors.dim .. colors.cyan .. "-- " .. tostring(t) .. colors.reset
             .. "\n"
+        )
 
         local metatable = getmetatable(t)
         if metatable then
-            s = s ..  ("     "):rep(inc)
-                .. colors.dim(colors.cyan "metatable = ")
+            io.write(
+                ("     "):rep(inc)
+                    .. colors.dim(colors.cyan "metatable = ")
+            )
             if not seen[metatable] then
-                s = s
-                    .. dump(metatable, inc + 1, seen) .. ",\n"
+                dump(metatable, inc + 1, seen)
+                io.write ",\n"
             else
-                s = s
-                    .. colors.yellow .. tostring(metatable) .. colors.reset .. ",\n"
+                io.write(colors.yellow .. tostring(metatable) .. colors.reset .. ",\n")
             end
         end
 
         for k, v in pairs(t) do
-            s = s .. ("     "):rep(inc)
+            io.write(("     "):rep(inc))
 
             local typeK = type(k)
             local typeV = type(v)
 
             if typeK == "table" and not seen[v] then
-                s = s  .. "["
-                    .. dump(k, inc + 1, seen)
-                    .. "] = "
+                io.write "["
+
+                dump(k, inc + 1, seen)
+
+                io.write "] = "
             elseif typeK == "string" then
-                s = s .. colors.blue .. k:format("%q") .. colors.reset
-                    .. " = "
+                io.write(colors.blue .. k:format("%q") .. colors.reset
+                    .. " = ")
             else
-                s = s  .. "["
+                io.write("["
                     .. colors.yellow .. tostring(k) .. colors.reset
-                    .. "] = "
+                    .. "] = ")
             end
 
             if typeV == "table" and not seen[v] then
-                s = s .. dump(v, inc + 1, seen) .. ",\n"
+                dump(v, inc + 1, seen)
+                io.write ",\n"
             elseif typeV == "string" then
-                s = s .. colors.green .. "\"" .. v .. "\"" .. colors.reset .. ",\n"
+                io.write(colors.green .. "\"" .. v .. "\"" .. colors.reset .. ",\n")
             else
-                s = s .. colors.yellow .. tostring(v) .. colors.reset .. ",\n"
+                io.write(colors.yellow .. tostring(v) .. colors.reset .. ",\n")
             end
         end
 
-        s = s .. ("     "):rep(inc - 1).. "}"
+        io.write(("     "):rep(inc - 1).. "}")
 
-        return s
+        return
     elseif type(t) == "string" then
-        return colors.green .. "\"" .. t .. "\"" .. colors.reset
+        io.write(colors.green .. "\"" .. t .. "\"" .. colors.reset)
+
+        return
     end
 
-    return colors.yellow .. tostring(t) .. colors.reset
+    io.write(colors.yellow .. tostring(t) .. colors.reset)
 end
 
 local function frameEnv(withGlobals, frameOffset)
@@ -179,29 +185,29 @@ local function runChunk(code, env)
         local result = table.pack(xpcall(fn, debug.traceback))
 
         if result[1] then
-            local dumps = {}
             for i = 2, result.n do
                 local r = result[i]
-                table.insert(dumps, dump(r))
+                dump(r)
+                io.write "\t"
             end
 
-            if #dumps > 0 then
-                print(table.concat(dumps, "\t"))
-            else
+            if result.n < 2 then
                 -- Look for assignments
-                local names = { code:match("^([^{=]+)%s?=[^=]") }
+                local names = { code:match "^([^{=]+)%s?=[^=]" }
                 if names then
-                    dumps = {}
                     for _, n in ipairs(names) do
                         local assignement = load("return " .. n)
                         local assigned = assignement and assignement()
                         if assigned then
-                            table.insert(dumps, dump(assigned))
+                            dump(assigned)
+                            io.write "\t"
                         end
                     end
-
-                    print(table.concat(dumps, "\t"))
                 end
+
+                io.write "\n"
+            else
+                io.write "\n"
             end
         else
             print(colors.red(result[2]))
@@ -236,17 +242,16 @@ local function runFile(script, arguments)
         return
     end
 
-    local dumps = {}
-    for i = 2, result.n do
-        local r = result[i]
-        table.insert(dumps, dump(r))
-    end
+    if result.n > 1 then
+        io.write(colors.bright(colors.blue("\nReturned values:\n")))
 
-    if #dumps > 0 then
-        print(
-            colors.bright(colors.blue("\nReturned values:\n")) ..
-            table.concat(dumps, "\t")
-        )
+        for i = 2, result.n do
+            local r = result[i]
+            dump(r)
+            io.write "\t"
+        end
+
+        io.write "\n"
     end
 end
 
