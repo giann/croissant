@@ -474,7 +474,7 @@ return function(script, arguments, breakpoints, fromCli)
 
                 -- Don't run any chunk if detached
                 if not badCommand and not cmd and not detached then
-                    if runChunk((multiline or "") .. code, env) then
+                    if runChunk((multiline or "") .. code, env, "__debugger__") then
                         multiline = (multiline or "") .. code .. "\n"
                     else
                         multiline = nil
@@ -496,6 +496,7 @@ return function(script, arguments, breakpoints, fromCli)
     local first = true
     local stackDepth, previousStackDepth
     local function hook(event, line)
+        local info = debug.getinfo(2)
         previousStackDepth = stackDepth
         stackDepth = countTrace(debug.traceback())
 
@@ -503,10 +504,15 @@ return function(script, arguments, breakpoints, fromCli)
             frame = frame + 1
             currentFrame = 0
 
-            lastEnteredFunction = debug.getinfo(2).name
+            lastEnteredFunction = info.name
         elseif previousStackDepth and (previousStackDepth > stackDepth) then -- return
             frame = frame - 1
             currentFrame = 0
+        end
+
+        -- Don't debug code from watchpoints/breakpoints/displays
+        if info.source == "[string \"__debugger__\"]" then
+            return
         end
 
         if (frameLimit and frame <= frameLimit) or (first and not fromCli) then
@@ -514,13 +520,6 @@ return function(script, arguments, breakpoints, fromCli)
             first = false
             doREPL(false)
         else
-            local info = debug.getinfo(2)
-
-            -- Don't debug code from watchpoints/breakpoints/displays
-            if info.source == "__debugger__" then
-                return
-            end
-
             local breaks = breakpoints[info.source:sub(2)]
             local breakpoint = breaks and breaks[tonumber(line)]
 

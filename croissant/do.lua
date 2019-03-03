@@ -181,12 +181,12 @@ local function bindInFrame(frame, name, value, env)
 end
 
 -- Returns true when more line are needed
-local function runChunk(code, env)
+local function runChunk(code, env, name)
     env = env or _G
 
-    local fn, err = load("return " .. code, "croissant", "t", env)
+    local fn, err = load("return " .. code, name or "croissant", "t", env)
     if not fn then
-        fn, err = load(code, "croissant", "t", env)
+        fn, err = load(code, name or "croissant", "t", env)
     end
 
     if fn then
