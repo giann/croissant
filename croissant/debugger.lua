@@ -229,6 +229,9 @@ local depthCommand = parser:command "depth dep"
 depthCommand:argument "limit"
     :description "Depth"
     :args(1)
+depthCommand:argument "items"
+    :description "Items"
+    :args "?"
 
 depthCommand._options = {}
 commandsHelp.depth = depthCommand:get_help()
@@ -649,7 +652,8 @@ return function(script, arguments, breakpoints, fromCli)
         end,
 
         depth = function(parsed)
-            conf.dumpLimit = tonumber(parsed.limit)
+            conf.dump.depthLimit = tonumber(parsed.limit)
+            conf.dump.itemsLimit = tonumber(parsed.items) or conf.dump.itemsLimit
         end,
 
         breakpoint = function(parsed)

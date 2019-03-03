@@ -3,7 +3,7 @@ local conf   = require "croissant.conf"
 
 local dump
 dump = function(t, inc, seen)
-    if type(t) == "table" and (inc or 0) < conf.dumpLimit then
+    if type(t) == "table" and (inc or 0) < conf.dump.depthLimit then
         inc = inc or 1
         seen = seen or {}
 
@@ -29,7 +29,15 @@ dump = function(t, inc, seen)
             end
         end
 
+        local count = 0
         for k, v in pairs(t) do
+            count = count + 1
+
+            if count > conf.dump.itemsLimit then
+                io.write(("     "):rep(inc) .. colors.dim(colors.cyan("...")) .. "\n")
+                break
+            end
+
             io.write(("     "):rep(inc))
 
             local typeK = type(k)

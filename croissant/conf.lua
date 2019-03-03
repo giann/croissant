@@ -75,7 +75,10 @@ local default = {
 
     help = "croissant.help",
 
-    dumpLimit = 5,
+    dump = {
+        depthLimit = 5,
+        itemsLimit = 30
+    }
 }
 
 -- Read from ~/.croissantrc
