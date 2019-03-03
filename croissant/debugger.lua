@@ -67,251 +67,203 @@ local attachedCommands = {
 local commandErrorMessage
 local commandsHelp = {}
 
+local parser = argparse()
+parser._name = ""
+
+local runCommand = parser:command "run r"
+    :description "Starts your script"
+
+runCommand._options = {}
+commandsHelp.run = runCommand:get_help()
+
+local argsCommand = parser:command "args a"
+    :description "Set arguments to pass to your script"
+argsCommand:argument "arguments"
+    :args "+"
+
+argsCommand._options = {}
+commandsHelp.args = argsCommand:get_help()
+
+local breakpointCommand = parser:command "breakpoint br b"
+    :description("Add a new breakpoint")
+breakpointCommand:argument "where"
+    :description "Where to break. Function, line number in current file or `file:line`"
+    :args(1)
+breakpointCommand:argument "when"
+    :description "Break only if this Lua expressions can be evaluated to be true"
+    :args "*"
+
+breakpointCommand._options = {}
+commandsHelp.breakpoint = breakpointCommand:get_help()
+
+local watchCommand = parser:command "watch wa"
+    :description("Add a new watchpoint")
+watchCommand:argument "expression"
+    :description "Break only if this evaluated Lua expression changes value"
+    :args "+"
+
+local displayCommand = parser:command "display dp"
+    :description("Prints expression each time the program stops")
+displayCommand:argument "expression"
+    :description "Lua expression to print"
+    :args "+"
+
+displayCommand._options = {}
+commandsHelp.display = displayCommand:get_help()
+
+local undisplayCommand = parser:command "undisplay undp udp"
+    :description("Removes display")
+undisplayCommand:argument "id"
+    :description "ID of display to remove"
+    :args(1)
+
+undisplayCommand._options = {}
+commandsHelp.undisplay = undisplayCommand:get_help()
+
+local conditionCommand = parser:command "condition cond"
+    :description "Modify breaking condition of a breakpoint"
+conditionCommand:argument "id"
+    :description "Breakpoint ID"
+    :args(1)
+conditionCommand:argument "condition"
+    :description "New breakpoint condition"
+    :args "+"
+
+conditionCommand._options = {}
+commandsHelp.condition = conditionCommand:get_help()
+
+local enableCommand = parser:command "enable en"
+    :description "Enable a breakpoint"
+enableCommand:argument "id"
+    :description "Breakpoint ID"
+    :args(1)
+
+enableCommand._options = {}
+commandsHelp.enable = enableCommand:get_help()
+
+local disableCommand = parser:command "disable dis di"
+    :description "Disable a breakpoint"
+disableCommand:argument "id"
+    :description "Breakpoint ID"
+    :args(1)
+
+disableCommand._options = {}
+commandsHelp.disable = disableCommand:get_help()
+
+local deleteCommand = parser:command "delete del de d"
+    :description "Delete a breakpoint"
+deleteCommand:argument "id"
+    :description "Breakpoint ID"
+    :args(1)
+
+deleteCommand._options = {}
+commandsHelp.delete = deleteCommand:get_help()
+
+local clearCommand = parser:command "clear cl"
+    :description "Delete all breakpoints, watchpoints and displays"
+
+clearCommand._options = {}
+commandsHelp.clear = clearCommand:get_help()
+
+local infoCommand = parser:command "info inf i"
+    :description "Get informations about the debugger state"
+infoCommand:argument "about"
+    :description("`breakpoints` will list breakpoints, "
+        .. "`locals` will list locals of the current context, "
+        .. "`displays` will list displays")
+    :args(1)
+
+infoCommand._options = {}
+commandsHelp.info = infoCommand:get_help()
+
+local stepCommand = parser:command "step st s"
+    :description "Step in the code (repeatable)"
+
+stepCommand._options = {}
+commandsHelp.step = stepCommand:get_help()
+
+local nextCommand = parser:command "next n"
+    :description "Step in the code without going over any function call (repeatable)"
+
+nextCommand._options = {}
+commandsHelp.next = nextCommand:get_help()
+
+local finishCommand = parser:command "finish f"
+    :description "Will break after leaving the current function (repeatable)"
+
+finishCommand._options = {}
+commandsHelp.finish = finishCommand:get_help()
+
+local upCommand = parser:command "up u"
+    :description "Go up one frame (repeatable)"
+
+upCommand._options = {}
+commandsHelp.up = upCommand:get_help()
+
+local downCommand = parser:command "down d"
+    :description "Go down one frame (repeatable)"
+
+downCommand._options = {}
+commandsHelp.down = downCommand:get_help()
+
+local continueCommand = parser:command "continue cont c"
+    :description("Continue until hitting a breakpoint. If no breakpoint are specified,"
+        .. " clears debug hooks (repeatable)")
+
+continueCommand._options = {}
+commandsHelp.continue = continueCommand:get_help()
+
+local evalCommand = parser:command "eval ev e"
+    :description "Evaluates lua code (useful to disambiguate from debugger commands)"
+evalCommand:argument "expression"
+    :description "Lua expression to evaluate"
+    :args "+"
+
+evalCommand._options = {}
+commandsHelp.eval = evalCommand:get_help()
+
+local whereCommand = parser:command "where wh w"
+    :description("Prints code around the current line. Is ran for you each time you step in"
+        .. " the code or change frame context")
+
+whereCommand._options = {}
+commandsHelp.where = whereCommand:get_help()
+
+local traceCommand = parser:command "trace tr t"
+    :description "Prints current stack trace and highlights current frame"
+
+traceCommand._options = {}
+commandsHelp.trace = traceCommand:get_help()
+
+local exitCommand = parser:command "exit ex"
+    :description "Quit"
+
+exitCommand._options = {}
+commandsHelp.exit = exitCommand:get_help()
+
+local helpCommand = parser:command "help h"
+    :description "Prints help message"
+helpCommand:argument "about"
+    :description "Command for which you want help"
+    :args "?"
+
+helpCommand._options = {}
+commandsHelp.help = helpCommand:get_help()
+
+-- We don't need any
+parser._options = {}
+
+commandsHelp[1] = not commandsHelp[1]
+    and parser:get_help()
+    or commandsHelp[1]
+
+-- If we can't parse it, raise an error instead of os.exit(0)
+parser.error = function(self, msg)
+    commandErrorMessage = msg
+    error(msg)
+end
+
 local function parseCommands(detached, args)
-    local parser = argparse()
-    parser._name = ""
-
-    if detached or detached == nil then
-        local runCommand = parser:command "run r"
-            :description "Starts your script"
-
-        runCommand._options = {}
-        commandsHelp.run = not commandsHelp.run
-            and runCommand:get_help()
-            or commandsHelp.run
-
-        local argsCommand = parser:command "args a"
-            :description "Set arguments to pass to your script"
-        argsCommand:argument "arguments"
-            :args "+"
-
-        argsCommand._options = {}
-        commandsHelp.args = not commandsHelp.args
-            and argsCommand:get_help()
-            or commandsHelp.args
-    end
-
-    local breakpointCommand = parser:command "breakpoint br b"
-        :description("Add a new breakpoint")
-    breakpointCommand:argument "where"
-        :description "Where to break. Function, line number in current file or `file:line`"
-        :args(1)
-    breakpointCommand:argument "when"
-        :description "Break only if this Lua expressions can be evaluated to be true"
-        :args "*"
-
-    breakpointCommand._options = {}
-    commandsHelp.breakpoint = not commandsHelp.breakpoint
-        and breakpointCommand:get_help()
-        or commandsHelp.breakpoint
-
-    local watchCommand = parser:command "watch wa"
-        :description("Add a new watchpoint")
-    watchCommand:argument "expression"
-        :description "Break only if this evaluated Lua expression changes value"
-        :args "+"
-
-    local displayCommand = parser:command "display dp"
-        :description("Prints expression each time the program stops")
-    displayCommand:argument "expression"
-        :description "Lua expression to print"
-        :args "+"
-
-    displayCommand._options = {}
-    commandsHelp.display = not commandsHelp.display
-        and displayCommand:get_help()
-        or commandsHelp.display
-
-    local undisplayCommand = parser:command "undisplay undp udp"
-        :description("Removes display")
-    undisplayCommand:argument "id"
-        :description "ID of display to remove"
-        :args(1)
-
-    undisplayCommand._options = {}
-    commandsHelp.undisplay = not commandsHelp.undisplay
-        and undisplayCommand:get_help()
-        or commandsHelp.undisplay
-
-    local conditionCommand = parser:command "condition cond"
-        :description "Modify breaking condition of a breakpoint"
-    conditionCommand:argument "id"
-        :description "Breakpoint ID"
-        :args(1)
-    conditionCommand:argument "condition"
-        :description "New breakpoint condition"
-        :args "+"
-
-    conditionCommand._options = {}
-    commandsHelp.condition = not commandsHelp.condition
-        and conditionCommand:get_help()
-        or commandsHelp.condition
-
-    local enableCommand = parser:command "enable en"
-        :description "Enable a breakpoint"
-    enableCommand:argument "id"
-        :description "Breakpoint ID"
-        :args(1)
-
-    enableCommand._options = {}
-    commandsHelp.enable = not commandsHelp.enable
-        and enableCommand:get_help()
-        or commandsHelp.enable
-
-    local disableCommand = parser:command "disable dis di"
-        :description "Disable a breakpoint"
-    disableCommand:argument "id"
-        :description "Breakpoint ID"
-        :args(1)
-
-    disableCommand._options = {}
-    commandsHelp.disable = not commandsHelp.disable
-        and disableCommand:get_help()
-        or commandsHelp.disable
-
-    local deleteCommand = parser:command "delete del de d"
-        :description "Delete a breakpoint"
-    deleteCommand:argument "id"
-        :description "Breakpoint ID"
-        :args(1)
-
-    deleteCommand._options = {}
-    commandsHelp.delete = not commandsHelp.delete
-        and deleteCommand:get_help()
-        or commandsHelp.delete
-
-    local clearCommand = parser:command "clear cl"
-        :description "Delete all breakpoints, watchpoints and displays"
-
-    clearCommand._options = {}
-    commandsHelp.clear = not commandsHelp.clear
-        and clearCommand:get_help()
-        or commandsHelp.clear
-
-    local infoCommand = parser:command "info inf i"
-        :description "Get informations about the debugger state"
-    infoCommand:argument "about"
-        :description("`breakpoints` will list breakpoints, "
-            .. "`locals` will list locals of the current context, "
-            .. "`displays` will list displays")
-        :args(1)
-
-    infoCommand._options = {}
-    commandsHelp.info = not commandsHelp.info
-        and infoCommand:get_help()
-        or commandsHelp.info
-
-    if not detached or detached == nil then
-        local stepCommand = parser:command "step st s"
-            :description "Step in the code (repeatable)"
-
-        stepCommand._options = {}
-        commandsHelp.step = not commandsHelp.step
-            and stepCommand:get_help()
-            or commandsHelp.step
-
-        local nextCommand = parser:command "next n"
-            :description "Step in the code without going over any function call (repeatable)"
-
-        nextCommand._options = {}
-        commandsHelp.next = not commandsHelp.next
-            and nextCommand:get_help()
-            or commandsHelp.next
-
-        local finishCommand = parser:command "finish f"
-            :description "Will break after leaving the current function (repeatable)"
-
-        finishCommand._options = {}
-        commandsHelp.finish = not commandsHelp.finish
-            and finishCommand:get_help()
-            or commandsHelp.finish
-
-        local upCommand = parser:command "up u"
-            :description "Go up one frame (repeatable)"
-
-        upCommand._options = {}
-        commandsHelp.up = not commandsHelp.up
-            and upCommand:get_help()
-            or commandsHelp.up
-
-        local downCommand = parser:command "down d"
-            :description "Go down one frame (repeatable)"
-
-        downCommand._options = {}
-        commandsHelp.down = not commandsHelp.down
-            and downCommand:get_help()
-            or commandsHelp.down
-
-        local continueCommand = parser:command "continue cont c"
-            :description("Continue until hitting a breakpoint. If no breakpoint are specified,"
-                .. " clears debug hooks (repeatable)")
-
-        continueCommand._options = {}
-        commandsHelp.continue = not commandsHelp.continue
-            and continueCommand:get_help()
-            or commandsHelp.continue
-
-        local evalCommand = parser:command "eval ev e"
-            :description "Evaluates lua code (useful to disambiguate from debugger commands)"
-        evalCommand:argument "expression"
-            :description "Lua expression to evaluate"
-            :args "+"
-
-        evalCommand._options = {}
-        commandsHelp.eval = not commandsHelp.eval
-            and evalCommand:get_help()
-            or commandsHelp.eval
-
-        local whereCommand = parser:command "where wh w"
-            :description("Prints code around the current line. Is ran for you each time you step in"
-                .. " the code or change frame context")
-
-        whereCommand._options = {}
-        commandsHelp.where = not commandsHelp.where
-            and whereCommand:get_help()
-            or commandsHelp.where
-
-        local traceCommand = parser:command "trace tr t"
-            :description "Prints current stack trace and highlights current frame"
-
-        traceCommand._options = {}
-        commandsHelp.trace = not commandsHelp.trace
-            and traceCommand:get_help()
-            or commandsHelp.trace
-    end
-
-    local exitCommand = parser:command "exit ex"
-        :description "Quit"
-
-    exitCommand._options = {}
-    commandsHelp.exit = not commandsHelp.exit
-        and exitCommand:get_help()
-        or commandsHelp.exit
-
-    local helpCommand = parser:command "help h"
-        :description "Prints help message"
-    helpCommand:argument "about"
-        :description "Command for which you want help"
-        :args "?"
-
-    helpCommand._options = {}
-    commandsHelp.help = not commandsHelp.help
-        and helpCommand:get_help()
-        or commandsHelp.help
-
-    -- We don't need any
-    parser._options = {}
-
-    commandsHelp[1] = not commandsHelp[1]
-        and parser:get_help()
-        or commandsHelp[1]
-
-    -- If we can't parse it, raise an error instead of os.exit(0)
-    parser.error = function(self, msg)
-        commandErrorMessage = msg
-        error(msg)
-    end
-
     local ok, parsed = xpcall(parser.parse, function(_)
         return commandErrorMessage
     end, parser, args)
@@ -330,9 +282,6 @@ local function parseCommands(detached, args)
 
     return ok, parsed
 end
-
--- Call it on time to populate help
-parseCommands(nil)
 
 local function highlight(code)
     local lexer = Lexer()
