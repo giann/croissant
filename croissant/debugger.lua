@@ -602,7 +602,7 @@ return function(script, arguments, breakpoints, fromCli)
                     io.write("\n")
                     for _, changed in ipairs(watchpointChanged) do
                         io.write(
-                            highlight(changed.expression)
+                            "`" .. highlight(changed.expression) .. "`"
                             .. " changed from "
                         )
 

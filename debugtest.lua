@@ -28,7 +28,7 @@ local function sayHello(name)
 
     local sayHelloLocal = "i'm local to sayHello"
 
-    require "croissant.debugger"()
+    -- require "croissant.debugger"()
 
     yo(name)
 

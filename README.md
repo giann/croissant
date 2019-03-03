@@ -27,12 +27,11 @@ Croissant is based on [sirocco](https://github.com/giann/sirocco).
 ### Planned
 
 - Customization: keybinding, theme, etc.
-- Support for Lua 5.1/JIT/5.2
 
 ## Installation
 
 Requirements:
-- Lua 5.3
+- Lua 5.1/JIT/5.2/5.3 (needs more testing for < 5.3 though)
 - luarocks >= 3.0 (_Note: `hererocks -rlatest` will install 2.4, you need to specify it with `-r3.0`_)
 
 ```bash
@@ -168,4 +167,33 @@ return {
         itemsLimit = 30
     }
 }
+```
+
+## Löve 2D
+
+Read and understand the [**Caveats**](#caveats) section.
+
+```bash
+luarocks install croissant --tree mygame/lua_modules
+```
+
+Tell Löve to search in `lua_modules`:
+
+```lua
+love.filesystem.setRequirePath(
+    love.filesystem.getRequirePath()
+        .. ";lua_modules/share/lua/5.1/?/init.lua"
+        .. ";lua_modules/share/lua/5.1/?.lua"
+)
+
+love.filesystem.setCRequirePath(
+    love.filesystem.getCRequirePath()
+    .. ";lua_modules/lib/lua/5.1/?.so"
+)
+```
+
+Require `croissant.debugger` where you want to break:
+
+```lua
+require "croissant.debugger"()
 ```
