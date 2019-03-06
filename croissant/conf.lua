@@ -62,6 +62,8 @@ local default = {
 
     historyLimit = 1000,
 
+    whereRows = 4,
+
     syntaxColors = {
         constant   = { "bright", "yellow" },
         string     = { "green" },

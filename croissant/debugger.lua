@@ -239,6 +239,9 @@ commandsHelp.depth = depthCommand:get_help()
 local whereCommand = parser:command "where wh w"
     :description("Prints code around the current line. Is ran for you each time you step in"
         .. " the code or change frame context")
+whereCommand:argument "rows"
+    :description "How many rows to show around the current line"
+    :args "?"
 
 whereCommand._options = {}
 commandsHelp.where = whereCommand:get_help()
@@ -967,7 +970,7 @@ return function(script, arguments, breakpoints, fromCli)
             return false
         end,
 
-        where = function(_, offset)
+        where = function(parsed, offset)
             offset = offset or 0
             local info = debug.getinfo(5 + offset + (currentFrame or 0))
 
@@ -994,8 +997,10 @@ return function(script, arguments, breakpoints, fromCli)
                 table.insert(lines, line)
             end
 
-            local minLine = math.max(1, info.currentline - 4)
-            local maxLine = math.min(#lines, info.currentline + 4)
+            local toShow = (parsed and parsed.rows) or conf.whereRows
+
+            local minLine = math.max(1, info.currentline - toShow)
+            local maxLine = math.min(#lines, info.currentline + toShow)
 
             local w = ""
             for count, line in ipairs(lines) do

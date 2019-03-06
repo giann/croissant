@@ -101,7 +101,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 - **`eval <code>`**: runs `code` (useful to disambiguate from debugger commands)
 - **`depth <depthLimit> <itemsLimit>`**: set depth limit and number of items when pretty printing values
 - **`exit`**: quit
-- **`where`**: prints code around the current line. Is ran for you each time you step in the code or change frame context
+- **`where [<rows>]`**: prints `<rows>` or `conf.whereRows` rows around the current line. Is ran for you each time you step in the code or change frame context
 
 <p align="center">
     <img src="https://github.com/giann/croissant/raw/master/assets/debugger-where.png" alt="where command">
@@ -146,6 +146,9 @@ return {
     -- Croissant manages two history file: one for the repl (~/.croissant_history),
     -- one for the debugger (~/.croissant_debugger_history)
     historyLimit = 1000,
+
+    -- How many rows `where` should print around the current line
+    whereRows = 4,
 
     -- Syntax highlighting colors
     -- Available colors are: black, red, green, yellow, blue, magenta, cyan, white.
