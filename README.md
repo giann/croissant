@@ -115,7 +115,7 @@ Croissant looks at the first word of your entry and runs any command it matches.
 
 ## Caveats
 
-- Pretty printing values can be expensive in CPU and memory: avoid dumping either large of deeply nested tables. You can play with the `dump.depthLimit` and `dump.itemsLimit` value in your `~/.croissantrc` or the `depth` command to avoid exploring to far down in complex tables.
+- Pretty printing values can be expensive in CPU and memory: avoid dumping either large of deeply nested tables. You can play with the `dump.depthLimit` and `dump.itemsLimit` value in your `$XDG_CONFIG_HOME/croissantrc` or `~/.croissantrc`, or the `depth` command to avoid exploring to far down in complex tables.
 - The debugger will slow your program down. Croissant will try and clear hooks whenever possible but if you know you won't hit anymore breakpoints, do a `clear` before doing `continue`.
 - A breakpoint on a function name will not work if the function is not called by its name in your code. Example:
 
@@ -133,7 +133,7 @@ call(stopMe)
 
 ## Configuration
 
-You can customize some aspect of croissant by writing a `~/.croissantrc` lua file. Here are the default values than you can overwrite:
+You can customize some aspect of croissant by writing a `$XDG_CONFIG_HOME/croissantrc` or `~/.croissantrc` lua file. Here are the default values than you can overwrite:
 
 ```lua
 return {

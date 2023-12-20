@@ -83,9 +83,10 @@ local default = {
     }
 }
 
--- Read from ~/.croissantrc
+-- Read from $XDG_CONFIG_HOME/croissantrc or ~/.croissantrc
 local user = {}
-local file, _ = io.open(os.getenv "HOME" .. "/.croissantrc", "r")
+local xdg_config_home = os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config"
+local file = io.open(xdg_config_home .. "/croissantrc", "r") or io.open(os.getenv "HOME" .. "/.croissantrc", "r")
 
 if file then
     local rc = file:read("*all")
