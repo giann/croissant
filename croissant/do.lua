@@ -263,10 +263,25 @@ local function runFile(script, arguments)
     end
 end
 
+local function getHistoryFile(debugger, mode)
+    local xdg_state_home = os.getenv("XDG_STATE_HOME") or os.getenv("HOME") .. "/.local/state"
+
+    local filename
+    if debugger == true then
+        filename = "croissant_debugger_history"
+    else
+        filename = "croissant_history"
+    end
+
+    local file = io.open(xdg_state_home .. "/" .. filename, mode)
+
+    return file
+end
+
 local function loadHistory()
     local history = {}
 
-    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_history", "r")
+    local historyFile = getHistoryFile(false, "r")
 
     if historyFile then
         for line in historyFile:lines() do
@@ -284,7 +299,7 @@ end
 local function loadDebugHistory()
     local history = {}
 
-    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_debugger_history", "r")
+    local historyFile = getHistoryFile(true, "r")
 
     if historyFile then
         for line in historyFile:lines() do
@@ -300,7 +315,7 @@ local function loadDebugHistory()
 end
 
 local function appendToHistory(code)
-    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_history", "a+")
+    local historyFile = getHistoryFile(false, "a+")
 
     if historyFile then
         historyFile:write(code:gsub("\n", "\\n") .. "\n")
@@ -310,7 +325,7 @@ local function appendToHistory(code)
 end
 
 local function appendToDebugHistory(code)
-    local historyFile = io.open(os.getenv "HOME" .. "/.croissant_debugger_history", "a+")
+    local historyFile = getHistoryFile(true, "a+")
 
     if historyFile then
         historyFile:write(code:gsub("\n", "\\n") .. "\n")
