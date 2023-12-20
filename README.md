@@ -143,8 +143,8 @@ return {
     continuationPrompt = ".... ",
 
     -- Maximum amount of remembered lines
-    -- Croissant manages two history file: one for the repl (~/.croissant_history),
-    -- one for the debugger (~/.croissant_debugger_history)
+    -- Croissant manages two history file: one for the repl ($XDG_STATE_HOME/croissant_history),
+    -- one for the debugger ($XDG_STATE_HOME/croissant_debugger_history)
     historyLimit = 1000,
 
     -- How many rows `where` should print around the current line
