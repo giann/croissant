@@ -329,7 +329,7 @@ local function luaVersion()
         nil,
         [false] = "Lua 5.1",
         [true] = "Lua 5.2",
-        [1/"-0"] = "Lua 5.3",
+        [1/"-0"] = ({ ['0.0'] = "Lua 5.3", ['0'] = "Lua 5.4" })[0 + '0' .. ''],
         [1] = "LuaJIT"
     }
 
